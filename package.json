@@ -290,7 +290,7 @@
         "@typescript-eslint/eslint-plugin": "^8.60.1",
         "@typescript-eslint/parser": "^8.60.1",
         "autoprefixer": "^10.4.17",
-        "esbuild": "^0.19.11",
+        "esbuild": "^0.28.0",
         "eslint": "^8.56.0",
         "postcss": "^8.4.33",
         "postcss-loader": "^7.3.4",
