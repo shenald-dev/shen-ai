@@ -131,7 +131,7 @@ export class ContextManager {
             return this.truncateMessages(recent, maxTokens);
         }
 
-        let remaining = maxTokens - recentTokens;
+        const remaining = maxTokens - recentTokens;
         const older = messages.slice(0, -RECENT_KEEP);
 
         // Summarize older messages

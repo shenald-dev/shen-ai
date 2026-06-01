@@ -290,7 +290,7 @@ export class ToolRegistry {
                 }
 
                 let replacements = 0;
-                let errors: string[] = [];
+                const errors: string[] = [];
                 let hasAnyError = false;
 
                 for (const block of blocks) {

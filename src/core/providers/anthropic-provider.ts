@@ -143,7 +143,7 @@ export class AnthropicProvider implements IProvider {
         let fullContent = "";
         const toolCalls: ProviderToolCall[] = [];
         const toolInputBuffers: Record<string, string> = {};
-        let usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+        const usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
         for await (const event of stream) {
             if (event.type === "content_block_delta") {

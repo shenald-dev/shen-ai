@@ -258,7 +258,10 @@
                 },
                 "shen.ai.agentMode": {
                     "type": "string",
-                    "enum": ["act", "plan"],
+                    "enum": [
+                        "act",
+                        "plan"
+                    ],
                     "default": "act",
                     "description": "The current mode of the AI agent (act or plan)"
                 },
@@ -284,6 +287,8 @@
         "@types/react-dom": "^18.2.18",
         "@types/vscode": "^1.85.0",
         "@types/vscode-webview": "^1.57.5",
+        "@typescript-eslint/eslint-plugin": "^8.60.1",
+        "@typescript-eslint/parser": "^8.60.1",
         "autoprefixer": "^10.4.17",
         "esbuild": "^0.19.11",
         "eslint": "^8.56.0",
@@ -300,8 +305,8 @@
         "@vscode/webview-ui-toolkit": "^1.4.0",
         "groq-sdk": "^0.12.0",
         "ignore": "^6.0.2",
-        "openai": "^4.77.0",
         "ollama": "^0.5.11",
+        "openai": "^4.77.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "react-markdown": "^9.0.1",

@@ -113,7 +113,7 @@ export class BlastRadiusAnalyzer {
         }
 
         const sourceDir = path.dirname(sourceFile);
-        let resolved = path.join(sourceDir, importPath);
+        const resolved = path.join(sourceDir, importPath);
 
         // Try common extensions
         const extensions = [".ts", ".tsx", ".js", ".jsx", ".json"];

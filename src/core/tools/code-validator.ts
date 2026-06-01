@@ -74,7 +74,7 @@ export class CodeValidator {
 
         let inString = false;
         let stringChar = "";
-        let inComment = false;
+        const inComment = false;
         let inMultiLineComment = false;
 
         for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {

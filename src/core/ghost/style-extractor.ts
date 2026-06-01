@@ -130,7 +130,7 @@ export class StyleExtractor {
         // Indentation analysis
         let spaceIndents = 0;
         let tabIndents = 0;
-        let indentSizes: number[] = [];
+        const indentSizes: number[] = [];
 
         for (const line of lines) {
             const match = line.match(/^(\s+)/);
