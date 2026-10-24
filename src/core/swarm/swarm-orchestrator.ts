@@ -342,6 +342,7 @@ Respond with ONLY valid JSON:
         // Track running promises with their associated subtask IDs for proper cleanup
         const runningTasks = new Map<string, Promise<void>>();
 
+        // eslint-disable-next-line no-constant-condition
         while (true) {
             // Re-compute pending tasks from the source of truth (task.subTasks) each iteration
             const pendingTasks = task.subTasks.filter((st) => st.status === "pending");
