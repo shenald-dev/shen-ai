@@ -6,3 +6,4 @@ out/
 *.log
 .env
 dist/extension.js.map
+dist/
