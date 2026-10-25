@@ -147,6 +147,7 @@ export class CityGenerator {
         // Generate buildings
         const buildings: CityBuilding[] = [];
         const buildingPositions = new Map<string, { x: number; y: number }>();
+        const buildingIndexTracker = new Map<string, number>();
 
         for (const node of nodes) {
             if (node.type === "file") continue; // Files are districts, not buildings
@@ -157,7 +158,9 @@ export class CityGenerator {
             const connections = this.graphStore.getNodeConnections(node.id).length;
 
             // Position within district
-            const nodeIndex = nodes.filter((n) => n.filePath === node.filePath && n.type !== "file").indexOf(node);
+            const nodeIndex = buildingIndexTracker.get(node.filePath) || 0;
+            buildingIndexTracker.set(node.filePath, nodeIndex + 1);
+
             const cols = Math.ceil(Math.sqrt(fileGroups.get(node.filePath)?.length || 1));
             const bx = (nodeIndex % cols) * buildingSpacing;
             const by = Math.floor(nodeIndex / cols) * buildingSpacing;
