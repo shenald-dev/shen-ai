@@ -274,6 +274,7 @@
         }
     },
     "scripts": {
+        "test": "jest",
         "vscode:prepublish": "npm run build",
         "build": "node esbuild.js",
         "watch": "node esbuild.js --watch",
@@ -283,11 +284,8 @@
         "test": "jest"
     },
     "devDependencies": {
-<<<<<<< HEAD
-        "@types/jest": "^30.0.0",
-=======
         "@types/cross-spawn": "^6.0.6",
->>>>>>> 09b65f34 (Fix command injection vulnerability in plugin loader)
+        "@types/jest": "^30.0.0",
         "@types/node": "^20.11.0",
         "@types/react": "^18.2.48",
         "@types/react-dom": "^18.2.18",
