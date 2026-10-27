@@ -7,3 +7,5 @@ out/
 .env
 dist/extension.js.map
 dist/
+benchmark-dist/
+.test-storage*/

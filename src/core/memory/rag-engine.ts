@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import { promises as fsPromises } from "fs";
 import * as path from "path";
 import { VectorStore, type VectorDocument, type SearchResult } from "./vector-store";
 import { EmbeddingGenerator, type EmbeddingConfig } from "./embedding-generator";
@@ -97,7 +98,7 @@ export class RAGEngine {
 
             for (const file of files) {
                 try {
-                    const stat = fs.statSync(file);
+                    const stat = await fsPromises.stat(file);
                     const lastModified = stat.mtimeMs;
 
                     // Skip if already indexed and not modified
@@ -110,7 +111,7 @@ export class RAGEngine {
                     this.vectorStore.removeByFilePath(file);
 
                     // Read and chunk the file
-                    const content = fs.readFileSync(file, "utf-8");
+                    const content = await fsPromises.readFile(file, "utf-8");
                     const chunks = this.chunkText(content);
                     const relPath = path.relative(root, file);
 
@@ -168,7 +169,7 @@ export class RAGEngine {
         const relPath = path.relative(root, fullPath);
 
         try {
-            const content = fs.readFileSync(fullPath, "utf-8");
+            const content = await fsPromises.readFile(fullPath, "utf-8");
             const chunks = this.chunkText(content);
 
             // Remove old chunks
