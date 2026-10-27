@@ -291,6 +291,7 @@
         "@types/node": "^20.11.0",
         "@types/react": "^18.2.48",
         "@types/react-dom": "^18.2.18",
+        "@types/shell-quote": "^1.7.5",
         "@types/vscode": "^1.85.0",
         "@types/vscode-webview": "^1.57.5",
         "@typescript-eslint/eslint-plugin": "^8.60.1",
