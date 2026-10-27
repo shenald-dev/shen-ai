@@ -19,7 +19,7 @@
         "declarationMap": true,
         "sourceMap": true,
         "jsx": "react-jsx",
-        "types": ["node", "vscode"]
+        "types": ["node", "vscode", "jest"]
     },
     "include": [
         "src/**/*"
