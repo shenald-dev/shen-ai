@@ -24,7 +24,11 @@ import type { MCPClient } from "../tools/mcp-client";
 import type * as vscode from "vscode";
 import { execFile } from "child_process";
 import { promisify } from "util";
+<<<<<<< HEAD
 import { parse } from "shell-quote";
+=======
+import spawn from "cross-spawn";
+>>>>>>> 09b65f34 (Fix command injection vulnerability in plugin loader)
 
 const execFileAsync = promisify(execFile);
 
@@ -515,7 +519,18 @@ export class PluginLoader extends EventEmitter {
             if (!fs.existsSync(targetDir)) {
                 fs.mkdirSync(targetDir, { recursive: true });
             }
-            await execAsync(`npm install ${source}`, { cwd: targetDir });
+            await new Promise<void>((resolve, reject) => {
+                const child = spawn("npm", ["install", source], { cwd: targetDir });
+
+                child.on("error", (error) => reject(error));
+                child.on("close", (code) => {
+                    if (code === 0) {
+                        resolve();
+                    } else {
+                        reject(new Error(`npm install failed with code ${code}`));
+                    }
+                });
+            });
         }
 
         await this.loadPlugin(targetDir);
