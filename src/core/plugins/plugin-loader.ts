@@ -22,10 +22,11 @@ import type { MemoryManager } from "../memory/memory-manager";
 import type { RAGEngine } from "../memory/rag-engine";
 import type { MCPClient } from "../tools/mcp-client";
 import type * as vscode from "vscode";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
+import { parse } from "shell-quote";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // ============================================================
 // SHEN AI — Plugin Loader
@@ -392,12 +393,23 @@ export class PluginLoader extends EventEmitter {
                 if (!this.isCommandAllowed(command, manifest)) {
                     throw new PluginError(pluginId, `Permission denied: command '${command}' is not in allowlist`);
                 }
+
+                const parsed = parse(command);
+                const args = parsed.filter((p): p is string => typeof p === "string");
+
+                if (args.length === 0 || args.length !== parsed.length) {
+                    throw new PluginError(pluginId, `Invalid command format or unsupported operators: ${command}`);
+                }
+
                 const root = getWorkspaceRoot() || process.cwd();
-                const { stdout, stderr } = await execAsync(command, {
+                const file = args[0];
+                const cmdArgs = args.slice(1);
+
+                const { stdout, stderr } = await execFileAsync(file, cmdArgs, {
                     cwd: root,
                     timeout: 30000,
                     maxBuffer: 1024 * 1024,
-                    shell: process.platform === "win32" ? "cmd.exe" : "/bin/sh",
+                    shell: false,
                 });
                 return { stdout, stderr };
             },
