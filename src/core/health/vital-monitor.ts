@@ -175,21 +175,14 @@ export class VitalMonitor extends EventEmitter {
         });
 
         // File size distribution
-        const largeFiles = sourceFiles.filter(async (f) => {
-            try {
-                const stat = await fs.promises.stat(f);
-                return stat.size > 10000; // > 10KB
-            } catch {
-                return false;
-            }
-        });
-        // We'll approximate since we can't await in filter
         let largeFileCount = 0;
         for (const f of sourceFiles) {
             try {
                 const stat = await fs.promises.stat(f);
                 if (stat.size > 10000) largeFileCount++;
-            } catch { /* skip */ }
+            } catch (error) {
+                logger.warn(`Failed to stat file for size check: ${f}`, error);
+            }
         }
         metrics.push({
             name: "Large Files",
@@ -362,7 +355,9 @@ export class VitalMonitor extends EventEmitter {
                         }
                     }
                 }
-            } catch { /* skip inaccessible directories */ }
+            } catch (error) {
+                logger.warn(`Failed to access directory ${dir}:`, error);
+            }
         };
 
         await walk(workspaceRoot);
@@ -420,7 +415,8 @@ export class VitalMonitor extends EventEmitter {
             let stat: fs.Stats;
             try {
                 stat = await fs.promises.stat(filePath);
-            } catch {
+            } catch (error) {
+                logger.warn(`Failed to stat file ${filePath}, using fallback:`, error);
                 stat = { mtimeMs: Date.now() } as fs.Stats;
             }
 
