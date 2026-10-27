@@ -577,8 +577,10 @@ export class VitalMonitor extends EventEmitter {
     ): HealthPrescription[] {
         const prescriptions: HealthPrescription[] = [];
 
+        const fileHealthValues = Array.from(fileHealth.values());
+
         // Find files with critical health
-        const criticalFiles = Array.from(fileHealth.values()).filter((f) => f.score < 30);
+        const criticalFiles = fileHealthValues.filter((f) => f.score < 30);
         for (const file of criticalFiles) {
             prescriptions.push({
                 id: `rx_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
@@ -594,7 +596,7 @@ export class VitalMonitor extends EventEmitter {
         }
 
         // High complexity prescription
-        const complexFiles = Array.from(fileHealth.values()).filter((f) => f.complexity > 30);
+        const complexFiles = fileHealthValues.filter((f) => f.complexity > 30);
         if (complexFiles.length > 0) {
             prescriptions.push({
                 id: `rx_${Date.now()}_complexity`,
@@ -610,7 +612,7 @@ export class VitalMonitor extends EventEmitter {
         }
 
         // TODO accumulation
-        const todoFiles = Array.from(fileHealth.values()).filter((f) =>
+        const todoFiles = fileHealthValues.filter((f) =>
             f.issues.some((i) => i.includes("TODO"))
         );
         if (todoFiles.length > 3) {
