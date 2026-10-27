@@ -130,13 +130,26 @@ export class VitalMonitor extends EventEmitter {
         }
 
         // Calculate aggregate metrics
-        const scores = Array.from(fileHealth.values()).map((f) => f.score);
-        const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 100;
+        const fileHealthValues = Array.from(fileHealth.values());
+        const numFiles = fileHealthValues.length;
+
+        let totalScore = 0;
+        let totalComplexity = 0;
+        let totalMaintainability = 0;
+        let totalIssues = 0;
+
+        for (let i = 0; i < numFiles; i++) {
+            const f = fileHealthValues[i];
+            totalScore += f.score;
+            totalComplexity += f.complexity;
+            totalMaintainability += f.maintainability;
+            totalIssues += f.issues.length;
+        }
+
+        const avgScore = numFiles > 0 ? totalScore / numFiles : 100;
 
         // Complexity metric
-        const avgComplexity = scores.length > 0
-            ? Array.from(fileHealth.values()).reduce((sum, f) => sum + f.complexity, 0) / scores.length
-            : 0;
+        const avgComplexity = numFiles > 0 ? totalComplexity / numFiles : 0;
         metrics.push({
             name: "Average Complexity",
             value: avgComplexity,
@@ -148,9 +161,7 @@ export class VitalMonitor extends EventEmitter {
         });
 
         // Maintainability metric
-        const avgMaintainability = scores.length > 0
-            ? Array.from(fileHealth.values()).reduce((sum, f) => sum + f.maintainability, 0) / scores.length
-            : 100;
+        const avgMaintainability = numFiles > 0 ? totalMaintainability / numFiles : 100;
         metrics.push({
             name: "Maintainability Index",
             value: avgMaintainability,
@@ -162,7 +173,6 @@ export class VitalMonitor extends EventEmitter {
         });
 
         // Technical debt metric
-        const totalIssues = Array.from(fileHealth.values()).reduce((sum, f) => sum + f.issues.length, 0);
         const debtScore = Math.min(totalIssues * 2, 100);
         metrics.push({
             name: "Technical Debt",
@@ -576,9 +586,10 @@ export class VitalMonitor extends EventEmitter {
         metrics: HealthMetric[]
     ): HealthPrescription[] {
         const prescriptions: HealthPrescription[] = [];
+        const fileHealthValues = Array.from(fileHealth.values());
 
         // Find files with critical health
-        const criticalFiles = Array.from(fileHealth.values()).filter((f) => f.score < 30);
+        const criticalFiles = fileHealthValues.filter((f) => f.score < 30);
         for (const file of criticalFiles) {
             prescriptions.push({
                 id: `rx_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
@@ -594,7 +605,7 @@ export class VitalMonitor extends EventEmitter {
         }
 
         // High complexity prescription
-        const complexFiles = Array.from(fileHealth.values()).filter((f) => f.complexity > 30);
+        const complexFiles = fileHealthValues.filter((f) => f.complexity > 30);
         if (complexFiles.length > 0) {
             prescriptions.push({
                 id: `rx_${Date.now()}_complexity`,
@@ -610,7 +621,7 @@ export class VitalMonitor extends EventEmitter {
         }
 
         // TODO accumulation
-        const todoFiles = Array.from(fileHealth.values()).filter((f) =>
+        const todoFiles = fileHealthValues.filter((f) =>
             f.issues.some((i) => i.includes("TODO"))
         );
         if (todoFiles.length > 3) {
