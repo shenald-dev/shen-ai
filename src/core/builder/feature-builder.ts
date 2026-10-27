@@ -7,6 +7,8 @@ import { generateId } from "../../utils/helpers";
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
+import { parse as shellParse } from "shell-quote";
+import spawn from "cross-spawn";
 
 // ============================================================
 // SHEN AI — Autonomous Feature Builder
@@ -417,14 +419,73 @@ Respond with ONLY the file content (no markdown code blocks).`;
                     throw new Error(`Step "${step.title}" requires a command`);
                 }
 
-                const { exec } = require("child_process");
-                const util = require("util");
-                const execPromise = util.promisify(exec);
+                const parsedCommand = shellParse(step.command);
 
-                const { stdout, stderr } = await execPromise(step.command, {
-                    cwd: workspaceRoot,
-                    timeout: 60000,
-                    maxBuffer: 1024 * 1024,
+                const hasOperators = parsedCommand.some((arg) => typeof arg !== "string");
+                if (hasOperators) {
+                    throw new Error(`Step "${step.title}" contains unsupported shell operators (&&, |, etc.). Please use multiple steps instead.`);
+                }
+
+                if (parsedCommand.length === 0) {
+                    throw new Error(`Step "${step.title}" provided an empty command`);
+                }
+
+                const executable = String(parsedCommand[0]);
+                const args = parsedCommand.slice(1).map(String);
+
+                let stdout = "";
+                let stderr = "";
+
+                await new Promise<void>((resolve, reject) => {
+                    const child = spawn(executable, args, {
+                        cwd: workspaceRoot,
+                        stdio: 'pipe',
+                        env: process.env
+                    });
+
+                    // Kill process if timeout reached (60000ms)
+                    const timeout = setTimeout(() => {
+                        child.kill();
+                        reject(new Error("Command timed out"));
+                    }, 60000);
+
+                    let outLen = 0;
+                    let errLen = 0;
+                    const MAX_BUFFER = 1024 * 1024;
+
+                    child.stdout?.on('data', (data) => {
+                        outLen += data.length;
+                        if (outLen > MAX_BUFFER) {
+                            child.kill();
+                            reject(new Error("Command exceeded max buffer"));
+                            return;
+                        }
+                        stdout += data.toString();
+                    });
+
+                    child.stderr?.on('data', (data) => {
+                        errLen += data.length;
+                        if (errLen > MAX_BUFFER) {
+                            child.kill();
+                            reject(new Error("Command exceeded max buffer"));
+                            return;
+                        }
+                        stderr += data.toString();
+                    });
+
+                    child.on('error', (err) => {
+                        clearTimeout(timeout);
+                        reject(err);
+                    });
+
+                    child.on('close', (code) => {
+                        clearTimeout(timeout);
+                        if (code !== 0) {
+                            reject(new Error(stderr || stdout || `Command failed with exit code ${code}`));
+                        } else {
+                            resolve();
+                        }
+                    });
                 });
 
                 step.result = stdout || stderr || "Command completed";
@@ -435,19 +496,72 @@ Respond with ONLY the file content (no markdown code blocks).`;
                 // Run tests if available
                 const testCommand = step.command || "npm test";
                 try {
-                    const { exec } = require("child_process");
-                    const util = require("util");
-                    const execPromise = util.promisify(exec);
+                    const parsedCommand = shellParse(testCommand);
 
-                    const { stdout } = await execPromise(testCommand, {
-                        cwd: workspaceRoot,
-                        timeout: 120000,
-                        maxBuffer: 1024 * 1024,
+                    const hasOperators = parsedCommand.some((arg) => typeof arg !== "string");
+                    if (hasOperators) {
+                        throw new Error(`Test command contains unsupported shell operators (&&, |, etc.).`);
+                    }
+
+                    if (parsedCommand.length === 0) {
+                        throw new Error(`Empty test command`);
+                    }
+
+                    const executable = String(parsedCommand[0]);
+                    const args = parsedCommand.slice(1).map(String);
+
+                    let stdout = "";
+                    let stderr = "";
+
+                    await new Promise<void>((resolve, reject) => {
+                        const child = spawn(executable, args, {
+                            cwd: workspaceRoot,
+                            stdio: 'pipe',
+                            env: process.env
+                        });
+
+                        // Kill process if timeout reached (120000ms)
+                        const timeout = setTimeout(() => {
+                            child.kill();
+                            reject(new Error("Test command timed out"));
+                        }, 120000);
+
+                        let outLen = 0;
+                        const MAX_BUFFER = 1024 * 1024;
+
+                        child.stdout?.on('data', (data) => {
+                            outLen += data.length;
+                            if (outLen > MAX_BUFFER) {
+                                child.kill();
+                                reject(new Error("Test command exceeded max buffer"));
+                                return;
+                            }
+                            stdout += data.toString();
+                        });
+
+                        child.stderr?.on('data', (data) => {
+                            stderr += data.toString();
+                        });
+
+                        child.on('error', (err) => {
+                            clearTimeout(timeout);
+                            reject(err);
+                        });
+
+                        child.on('close', (code) => {
+                            clearTimeout(timeout);
+                            if (code !== 0) {
+                                reject(new Error(stderr || stdout || `Test failed with exit code ${code}`));
+                            } else {
+                                resolve();
+                            }
+                        });
                     });
+
                     step.result = stdout;
                 } catch (error) {
-                    const err = error as { stdout?: string; stderr?: string; message: string };
-                    step.result = err.stdout || err.stderr || err.message;
+                    const err = error as { message: string };
+                    step.result = err.message;
                     // Don't throw — test failures are informational
                 }
                 break;
