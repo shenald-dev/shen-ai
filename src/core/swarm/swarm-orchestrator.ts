@@ -183,9 +183,13 @@ export class SwarmOrchestrator extends EventEmitter {
      * Cancel the current swarm task.
      */
     cancelTask(): void {
-        const activeTask = Array.from(this.tasks.values()).find(
-            (t) => t.status === "executing" || t.status === "planning"
-        );
+        let activeTask: SwarmTask | undefined;
+        for (const t of this.tasks.values()) {
+            if (t.status === "executing" || t.status === "planning") {
+                activeTask = t;
+                break;
+            }
+        }
         if (activeTask) {
             activeTask.status = "cancelled";
             activeTask.completedAt = Date.now();
@@ -206,17 +210,24 @@ export class SwarmOrchestrator extends EventEmitter {
         progress?: SwarmProgress;
         conflictStats: ReturnType<ConflictResolver["getStats"]>;
     } {
-        const activeTask = Array.from(this.tasks.values()).find(
-            (t) => t.status === "executing" || t.status === "planning"
-        );
+        let activeTask: SwarmTask | undefined;
+        for (const t of this.tasks.values()) {
+            if (t.status === "executing" || t.status === "planning") {
+                activeTask = t;
+                break;
+            }
+        }
 
         let progress: SwarmProgress | undefined;
         if (activeTask) {
             const completed = activeTask.subTasks.filter((st) => st.status === "completed").length;
             const failed = activeTask.subTasks.filter((st) => st.status === "failed").length;
-            const activeAgents = Array.from(this.agents.values()).filter(
-                (a) => a.status === "working"
-            ).length;
+            let activeAgents = 0;
+            for (const a of this.agents.values()) {
+                if (a.status === "working") {
+                    activeAgents++;
+                }
+            }
 
             progress = {
                 taskId: activeTask.id,
@@ -521,9 +532,13 @@ When done, provide a summary of what you accomplished.`;
     private handleAgentMessage(msg: { type: string; from: string; payload: unknown }): void {
         switch (msg.type) {
             case "conflict_detected":
-                const task = Array.from(this.tasks.values()).find(
-                    (t) => t.status === "executing"
-                );
+                let task: SwarmTask | undefined;
+                for (const t of this.tasks.values()) {
+                    if (t.status === "executing") {
+                        task = t;
+                        break;
+                    }
+                }
                 if (task) {
                     task.conflicts++;
                 }

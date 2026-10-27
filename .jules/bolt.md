@@ -20,3 +20,7 @@
 ## 2026-10-27 - Performance Optimization: Iterate Directly Over Maps Instead of Arrays
 - **Learning:** In `swarm-orchestrator.ts`, the array allocation `Array.from(this.agents.values()).filter(...)` was used inside a loop to find idle agents. This causes unnecessary garbage collection pressure and is slow (measurably 370ms down to 28ms in a loop).
 - **Action:** Refactored the array map-and-filter approach into a direct `for (const agent of this.agents.values())` loop. This avoids the GC penalty by modifying logic directly inline.
+
+## 2026-10-27 - Jest VS Code Mocking
+- **Learning:** When running Jest tests in a VS Code extension, `Cannot find module 'vscode'` errors occur because `vscode` is a virtual module provided by the extension host.
+- **Action:** Ensure `jest.config.js` configures `moduleNameMapper` to map `^vscode$` to `jest-mock-vscode` or similar mocking library.
