@@ -417,17 +417,56 @@ Respond with ONLY the file content (no markdown code blocks).`;
                     throw new Error(`Step "${step.title}" requires a command`);
                 }
 
-                const { exec } = require("child_process");
-                const util = require("util");
-                const execPromise = util.promisify(exec);
+                const spawn = require("cross-spawn");
+                const { parse } = require("shell-quote");
 
-                const { stdout, stderr } = await execPromise(step.command, {
-                    cwd: workspaceRoot,
-                    timeout: 60000,
-                    maxBuffer: 1024 * 1024,
-                });
+                try {
+                    const parsedArgs = parse(step.command);
+                    const args: string[] = [];
+                    for (const arg of parsedArgs) {
+                        if (typeof arg === 'string') {
+                            args.push(arg);
+                        } else {
+                            throw new Error("Shell operators (e.g., &&, |, >) are not supported for security reasons.");
+                        }
+                    }
 
-                step.result = stdout || stderr || "Command completed";
+                    if (args.length === 0) {
+                        step.result = "No valid command to execute";
+                        break;
+                    }
+
+                    const cmd = args[0];
+                    const cmdArgs = args.slice(1);
+
+                    const result = await new Promise<{stdout: string, stderr: string}>((resolve, reject) => {
+                        let stdout = "";
+                        let stderr = "";
+
+                        const child = spawn(cmd, cmdArgs, {
+                            cwd: workspaceRoot,
+                            timeout: 60000,
+                        });
+
+                        child.stdout?.on('data', (data: Buffer) => {
+                            stdout += data.toString();
+                            if (stdout.length > 1024 * 1024) child.kill();
+                        });
+
+                        child.stderr?.on('data', (data: Buffer) => {
+                            stderr += data.toString();
+                            if (stderr.length > 1024 * 1024) child.kill();
+                        });
+
+                        child.on('error', (err: Error) => reject(err));
+                        child.on('close', () => resolve({ stdout, stderr }));
+                    });
+
+                    step.result = result.stdout || result.stderr || "Command completed";
+                } catch (error) {
+                    const err = error as { message: string };
+                    step.result = err.message;
+                }
                 break;
             }
 
@@ -435,19 +474,54 @@ Respond with ONLY the file content (no markdown code blocks).`;
                 // Run tests if available
                 const testCommand = step.command || "npm test";
                 try {
-                    const { exec } = require("child_process");
-                    const util = require("util");
-                    const execPromise = util.promisify(exec);
+                    const spawn = require("cross-spawn");
+                    const { parse } = require("shell-quote");
 
-                    const { stdout } = await execPromise(testCommand, {
-                        cwd: workspaceRoot,
-                        timeout: 120000,
-                        maxBuffer: 1024 * 1024,
+                    const parsedArgs = parse(testCommand);
+                    const args: string[] = [];
+                    for (const arg of parsedArgs) {
+                        if (typeof arg === 'string') {
+                            args.push(arg);
+                        } else {
+                            throw new Error("Shell operators (e.g., &&, |, >) are not supported for security reasons.");
+                        }
+                    }
+
+                    if (args.length === 0) {
+                        step.result = "No valid command to execute";
+                        break;
+                    }
+
+                    const cmd = args[0];
+                    const cmdArgs = args.slice(1);
+
+                    const result = await new Promise<{stdout: string, stderr: string}>((resolve, reject) => {
+                        let stdout = "";
+                        let stderr = "";
+
+                        const child = spawn(cmd, cmdArgs, {
+                            cwd: workspaceRoot,
+                            timeout: 120000,
+                        });
+
+                        child.stdout?.on('data', (data: Buffer) => {
+                            stdout += data.toString();
+                            if (stdout.length > 1024 * 1024) child.kill();
+                        });
+
+                        child.stderr?.on('data', (data: Buffer) => {
+                            stderr += data.toString();
+                            if (stderr.length > 1024 * 1024) child.kill();
+                        });
+
+                        child.on('error', (err: Error) => reject(err));
+                        child.on('close', () => resolve({ stdout, stderr }));
                     });
-                    step.result = stdout;
+
+                    step.result = result.stdout || result.stderr;
                 } catch (error) {
-                    const err = error as { stdout?: string; stderr?: string; message: string };
-                    step.result = err.stdout || err.stderr || err.message;
+                    const err = error as { message: string };
+                    step.result = err.message;
                     // Don't throw — test failures are informational
                 }
                 break;
