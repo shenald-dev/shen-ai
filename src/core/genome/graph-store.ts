@@ -409,7 +409,9 @@ export class GraphStore {
             try {
                 const tempPath = path.join(this.storagePath, "genome-graph.json.tmp");
                 if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
-            } catch { /* ignore */ }
+            } catch (cleanupError) {
+                logger.warn("Failed to clean up temporary graph store file:", cleanupError);
+            }
         }
     }
 }
