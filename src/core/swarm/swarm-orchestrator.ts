@@ -385,23 +385,31 @@ Respond with ONLY valid JSON:
             }
 
             // Assign ready tasks to idle agents
-            const idleAgents = Array.from(this.agents.values()).filter((a) => a.status === "idle");
-            const assignments = Math.min(readyTasks.length, idleAgents.length);
+            let assignedCount = 0;
+            const maxAssignments = readyTasks.length;
 
-            for (let i = 0; i < assignments; i++) {
-                const subTask = readyTasks[i];
-                const agent = idleAgents[i];
+            if (maxAssignments > 0) {
+                for (const agent of this.agents.values()) {
+                    if (agent.status === "idle") {
+                        const subTask = readyTasks[assignedCount];
 
-                subTask.status = "in_progress";
-                subTask.assignedAgentId = agent.id;
-                agent.status = "working";
-                agent.currentTask = subTask;
+                        subTask.status = "in_progress";
+                        subTask.assignedAgentId = agent.id;
+                        agent.status = "working";
+                        agent.currentTask = subTask;
 
-                const promise = this.executeSubTask(agent, subTask, task).then(() => {
-                    // Remove from running tasks when complete
-                    runningTasks.delete(subTask.id);
-                });
-                runningTasks.set(subTask.id, promise);
+                        const promise = this.executeSubTask(agent, subTask, task).then(() => {
+                            // Remove from running tasks when complete
+                            runningTasks.delete(subTask.id);
+                        });
+                        runningTasks.set(subTask.id, promise);
+
+                        assignedCount++;
+                        if (assignedCount >= maxAssignments) {
+                            break;
+                        }
+                    }
+                }
             }
 
             // Wait for at least one running task to complete before assigning more
