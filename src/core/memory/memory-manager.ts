@@ -509,7 +509,9 @@ export class MemoryManager {
                 try {
                     const tempPath = path.join(this.storageDir, filename + ".tmp");
                     if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
-                } catch { /* ignore */ }
+                } catch (cleanupError) {
+                    logger.error(`Failed to clean up temp file for ${filename}:`, cleanupError);
+                }
             }
         }).catch((err) => {
             // Prevent queue from dying on error
