@@ -123,8 +123,14 @@ export class VitalMonitor extends EventEmitter {
         // Scan all source files
         const sourceFiles = await this.collectSourceFiles(workspaceRoot);
 
-        for (const file of sourceFiles) {
+        const fileHealthPromises = sourceFiles.map(async (file) => {
             const health = await this.analyzeFileHealth(file, workspaceRoot);
+            return { file, health };
+        });
+
+        const fileHealthResults = await Promise.all(fileHealthPromises);
+
+        for (const { file, health } of fileHealthResults) {
             fileHealth.set(file, health);
             this.fileHealthCache.set(file, health);
         }
@@ -175,22 +181,19 @@ export class VitalMonitor extends EventEmitter {
         });
 
         // File size distribution
-        const largeFiles = sourceFiles.filter(async (f) => {
-            try {
-                const stat = await fs.promises.stat(f);
-                return stat.size > 10000; // > 10KB
-            } catch {
-                return false;
-            }
-        });
-        // We'll approximate since we can't await in filter
         let largeFileCount = 0;
-        for (const f of sourceFiles) {
+        const fileSizePromises = sourceFiles.map(async (f) => {
             try {
                 const stat = await fs.promises.stat(f);
-                if (stat.size > 10000) largeFileCount++;
+                if (stat.size > 10000) {
+                    return 1 as number;
+                }
             } catch { /* skip */ }
-        }
+            return 0 as number;
+        });
+
+        const fileSizeResults = await Promise.all(fileSizePromises);
+        largeFileCount = fileSizeResults.reduce((acc, val) => acc + val, 0);
         metrics.push({
             name: "Large Files",
             value: largeFileCount,
