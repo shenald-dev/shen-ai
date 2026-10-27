@@ -471,10 +471,22 @@ export class VitalMonitor extends EventEmitter {
         let count = 0;
         let match;
 
+        // Pre-calculate brace indices to avoid creating substrings in the loop
+        const braceIndices: number[] = [];
+        let i = code.indexOf("{");
+        while (i !== -1) {
+            braceIndices.push(i);
+            i = code.indexOf("{", i + 1);
+        }
+
+        let currentBraceIdx = 0;
+
         while ((match = functionRegex.exec(code)) !== null) {
-            const startLine = code.substring(0, match.index).split("\n").length;
-            const remaining = code.substring(match.index);
-            const braceCount = (remaining.match(/\{/g) || []).length;
+            while (currentBraceIdx < braceIndices.length && braceIndices[currentBraceIdx] < match.index) {
+                currentBraceIdx++;
+            }
+
+            const braceCount = braceIndices.length - currentBraceIdx;
             const estimatedLength = Math.min(braceCount * 5, 200);
             if (estimatedLength > 50) count++;
         }
