@@ -442,7 +442,11 @@ export class PluginLoader extends EventEmitter {
             const disposables = this.disposables.get(pluginId);
             if (disposables) {
                 for (const d of disposables) {
-                    try { d.dispose(); } catch { /* ignore */ }
+                    try {
+                        d.dispose();
+                    } catch (error) {
+                        logger.warn(`Failed to dispose disposable for plugin ${pluginId}:`, error);
+                    }
                 }
                 this.disposables.delete(pluginId);
             }
