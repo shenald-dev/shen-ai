@@ -354,7 +354,6 @@ export class RAGEngine {
         async function walk(currentDir: string): Promise<void> {
             try {
                 const items = await fs.promises.readdir(currentDir, { withFileTypes: true });
-                const promises: Promise<void>[] = [];
                 for (const item of items) {
                     if (item.name.startsWith(".")) continue;
                     if (DEFAULT_CONFIG.excludePatterns.some((p) => item.name.includes(p))) continue;
@@ -362,7 +361,7 @@ export class RAGEngine {
                     const fullPath = path.join(currentDir, item.name);
 
                     if (item.isDirectory()) {
-                        promises.push(walk(fullPath));
+                        await walk(fullPath);
                     } else {
                         const ext = path.extname(item.name);
                         if (DEFAULT_CONFIG.fileExtensions.includes(ext)) {
@@ -370,7 +369,6 @@ export class RAGEngine {
                         }
                     }
                 }
-                await Promise.all(promises);
             } catch {
                 // Skip inaccessible directories
             }
