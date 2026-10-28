@@ -280,8 +280,7 @@
         "watch": "node esbuild.js --watch",
         "lint": "eslint src --ext ts,tsx",
         "package": "vsce package --no-dependencies",
-        "publish": "vsce publish --no-dependencies",
-        "test": "jest"
+        "publish": "vsce publish --no-dependencies"
     },
     "devDependencies": {
         "@types/cross-spawn": "^6.0.6",

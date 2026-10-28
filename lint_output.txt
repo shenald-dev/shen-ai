@@ -1,0 +1,159 @@
+
+> shen-ai@0.1.0 lint
+> eslint src --ext ts,tsx
+
+
+/app/src/core/agent/base-agent.ts
+  4:32  warning  'ToolDefinition' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/agent/orchestrator-agent.ts
+  160:15  warning  'availableRoles' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  373:18  warning  'error' is defined but never used                    @typescript-eslint/no-unused-vars
+
+/app/src/core/builder/feature-builder.ts
+  254:15  warning  'workspaceRoot' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/chat/chat-manager.ts
+   6:5   warning  'MessageType' is defined but never used     @typescript-eslint/no-unused-vars
+  14:22  warning  'estimateTokens' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/genome/genome-builder.ts
+  4:59  warning  'NodeType' is defined but never used  @typescript-eslint/no-unused-vars
+  4:74  warning  'EdgeType' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/ghost/style-extractor.ts
+  255:19  warning  'startLine' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/health/vital-monitor.ts
+  140:15  warning  'avgScore' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  405:19  warning  'hasTryCatch' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  563:42  warning  'currentValue' is defined but never used          @typescript-eslint/no-unused-vars
+  591:9   warning  'metrics' is defined but never used               @typescript-eslint/no-unused-vars
+
+/app/src/core/memory/context-manager.ts
+    1:32  warning  'ToolDefinition' is defined but never used    @typescript-eslint/no-unused-vars
+  183:23  warning  'toolMsg' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/memory/embedding-generator.ts
+  2:15  warning  'ProviderMessage' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/memory/memory-manager.ts
+  277:15  warning  'existingKey' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/plugins/plugin-api.ts
+  1:31  warning  'ToolCall' is defined but never used    @typescript-eslint/no-unused-vars
+  1:41  warning  'ToolResult' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/plugins/plugin-loader.ts
+  27:0  error  Parsing error: Merge conflict marker encountered
+
+/app/src/core/providers/anthropic-provider.ts
+  7:5  warning  'StreamingChunk' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/providers/azure-provider.ts
+  7:5  warning  'StreamingChunk' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/providers/custom-provider.ts
+  7:5  warning  'StreamingChunk' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/providers/google-provider.ts
+    7:5  warning  'StreamingChunk' is defined but never used  @typescript-eslint/no-unused-vars
+   53:9  warning  'abortSignal' is defined but never used     @typescript-eslint/no-unused-vars
+  113:9  warning  'abortSignal' is defined but never used     @typescript-eslint/no-unused-vars
+
+/app/src/core/providers/groq-provider.ts
+   7:5  warning  'StreamingChunk' is defined but never used  @typescript-eslint/no-unused-vars
+  47:9  warning  'abortSignal' is defined but never used     @typescript-eslint/no-unused-vars
+  98:9  warning  'abortSignal' is defined but never used     @typescript-eslint/no-unused-vars
+
+/app/src/core/providers/mistral-provider.ts
+    7:5  warning  'StreamingChunk' is defined but never used  @typescript-eslint/no-unused-vars
+   47:9  warning  'abortSignal' is defined but never used     @typescript-eslint/no-unused-vars
+  109:9  warning  'abortSignal' is defined but never used     @typescript-eslint/no-unused-vars
+
+/app/src/core/providers/ollama-provider.ts
+    7:5  warning  'StreamingChunk' is defined but never used  @typescript-eslint/no-unused-vars
+   47:9  warning  'abortSignal' is defined but never used     @typescript-eslint/no-unused-vars
+  103:9  warning  'abortSignal' is defined but never used     @typescript-eslint/no-unused-vars
+
+/app/src/core/providers/openai-provider.ts
+   7:5   warning  'StreamingChunk' is defined but never used  @typescript-eslint/no-unused-vars
+  12:10  warning  'safeJsonParse' is defined but never used   @typescript-eslint/no-unused-vars
+
+/app/src/core/providers/provider-registry.ts
+  1:80  warning  'StreamingChunk' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/sandbox/sandbox-manager.ts
+    2:13  warning  'path' is defined but never used       @typescript-eslint/no-unused-vars
+    3:10  warning  'logger' is defined but never used     @typescript-eslint/no-unused-vars
+  287:9   warning  'testInput' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/swarm/agent-message-bus.ts
+  117:15  warning  'requestMessage' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/swarm/swarm-orchestrator.ts
+    5:32  warning  'MessageType' is defined but never used  @typescript-eslint/no-unused-vars
+  436:71  warning  'parentTask' is defined but never used   @typescript-eslint/no-unused-vars
+
+/app/src/core/tools/checkpoint-manager.ts
+  521:19  warning  'commitResult' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  529:18  warning  'e' is defined but never used                      @typescript-eslint/no-unused-vars
+
+/app/src/core/tools/git-tools.ts
+    1:13  warning  'vscode' is defined but never used               @typescript-eslint/no-unused-vars
+   68:29  warning  'stderr' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  183:15  warning  'statOutput' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/tools/mcp-client.ts
+    3:10  warning  'generateId' is defined but never used       @typescript-eslint/no-unused-vars
+  274:27  warning  'config' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  461:22  warning  'error' is defined but never used            @typescript-eslint/no-unused-vars
+
+/app/src/core/tools/tool-registry.ts
+  614:23  warning  'newStart' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/app/src/core/visualization/city-generator.ts
+  105:13  warning  'gridSize' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  260:21  warning  'filePath' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/app/src/extension.ts
+    7:18  warning  'LogLevel' is defined but never used                         @typescript-eslint/no-unused-vars
+   63:5   warning  'sandboxManager' is assigned a value but never used          @typescript-eslint/no-unused-vars
+   78:5   warning  'codeValidator' is assigned a value but never used           @typescript-eslint/no-unused-vars
+   79:5   warning  'conversationSummarizer' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  182:43  warning  'build' is defined but never used                            @typescript-eslint/no-unused-vars
+  702:31  warning  'map2d' is assigned a value but never used                   @typescript-eslint/no-unused-vars
+  737:19  warning  'behaviorStats' is assigned a value but never used           @typescript-eslint/no-unused-vars
+
+/app/src/ui/webview-provider.ts
+  10:5  warning  'ChatMessage' is defined but never used  @typescript-eslint/no-unused-vars
+  58:9  warning  '_context' is defined but never used     @typescript-eslint/no-unused-vars
+  59:9  warning  '_token' is defined but never used       @typescript-eslint/no-unused-vars
+
+/app/src/ui/webview/App.tsx
+   89:9   warning  'resetStreamingState' is assigned a value but never used    @typescript-eslint/no-unused-vars
+   90:9   warning  'truncateMessagesAfter' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  285:11  warning  'handleNewTask' is assigned a value but never used          @typescript-eslint/no-unused-vars
+
+/app/src/ui/webview/components/ActivityTimeline.tsx
+  1:46  warning  'useMemo' is defined but never used       @typescript-eslint/no-unused-vars
+  3:23  warning  'ThinkingIcon' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/ui/webview/components/CheckpointTimeline.tsx
+  92:11  warning  'getFileName' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/app/src/ui/webview/components/HistoryPanel.tsx
+  45:11  warning  'formatDate' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/app/src/ui/webview/components/LiveFilePreview.tsx
+  57:5   warning  'isProcessing' is defined but never used           @typescript-eslint/no-unused-vars
+  93:11  warning  'isNewContent' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/app/src/ui/webview/components/MessageBubble.tsx
+  1:46  warning  'useMemo' is defined but never used      @typescript-eslint/no-unused-vars
+  9:33  warning  'RestoreIcon' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/ui/webview/components/icons/AnimatedIcons.tsx
+  14:7  warning  'defaultProps' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 77 problems (1 error, 76 warnings)
