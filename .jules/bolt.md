@@ -24,3 +24,7 @@
 ## 2026-10-27 - Jest VS Code Mocking
 - **Learning:** When running Jest tests in a VS Code extension, `Cannot find module 'vscode'` errors occur because `vscode` is a virtual module provided by the extension host.
 - **Action:** Ensure `jest.config.js` configures `moduleNameMapper` to map `^vscode$` to `jest-mock-vscode` or similar mocking library.
+
+## 2026-10-27 - Performance Optimization: O(N^2) Array Search in Hot Path
+- **Learning:** In `swarm-orchestrator.ts`, resolving task dependencies inside a `while (true)` loop used nested array iterators (`.filter()`, `.every()`, `.find()`), causing an O(N^2) bottleneck.
+- **Action:** Refactored the array search approach into a precomputed `Map` per loop iteration, allowing O(1) dependency lookups and bringing the algorithmic complexity down to O(N).
