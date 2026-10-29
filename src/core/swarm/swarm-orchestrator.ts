@@ -356,30 +356,58 @@ Respond with ONLY valid JSON:
         // eslint-disable-next-line no-constant-condition
         while (true) {
             // Re-compute pending tasks from the source of truth (task.subTasks) each iteration
-            const pendingTasks = task.subTasks.filter((st) => st.status === "pending");
-            const inProgressTasks = task.subTasks.filter((st) => st.status === "in_progress");
+            const pendingTasks: SubTask[] = [];
+            let inProgressCount = 0;
+            const subTaskMap = new Map<string, SubTask>();
+
+            for (const st of task.subTasks) {
+                subTaskMap.set(st.id, st);
+                if (st.status === "pending") {
+                    pendingTasks.push(st);
+                } else if (st.status === "in_progress") {
+                    inProgressCount++;
+                }
+            }
 
             // Check if all work is done
-            if (pendingTasks.length === 0 && inProgressTasks.length === 0 && runningTasks.size === 0) {
+            if (pendingTasks.length === 0 && inProgressCount === 0 && runningTasks.size === 0) {
                 break;
             }
 
             // Find tasks whose dependencies are all completed
-            const readyTasks = pendingTasks.filter((st) =>
-                st.dependencies.every((depId) => {
-                    const dep = task.subTasks.find((s) => s.id === depId);
-                    return dep && dep.status === "completed";
-                })
-            );
+            const readyTasks: SubTask[] = [];
+            let blockedByFailed = false;
+
+            if (pendingTasks.length > 0) {
+                for (const st of pendingTasks) {
+                    let allDepsCompleted = true;
+                    let hasFailedDep = false;
+
+                    for (const depId of st.dependencies) {
+                        const dep = subTaskMap.get(depId);
+                        if (!dep) {
+                            allDepsCompleted = false;
+                            continue;
+                        }
+
+                        if (dep.status === "failed") {
+                            hasFailedDep = true;
+                            allDepsCompleted = false;
+                            break;
+                        } else if (dep.status !== "completed") {
+                            allDepsCompleted = false;
+                        }
+                    }
+
+                    if (hasFailedDep) {
+                        blockedByFailed = true;
+                    } else if (allDepsCompleted) {
+                        readyTasks.push(st);
+                    }
+                }
+            }
 
             if (readyTasks.length === 0 && runningTasks.size === 0) {
-                // Check if we're blocked by failed tasks
-                const blockedByFailed = pendingTasks.some((st) =>
-                    st.dependencies.some((depId) => {
-                        const dep = task.subTasks.find((s) => s.id === depId);
-                        return dep && dep.status === "failed";
-                    })
-                );
 
                 if (blockedByFailed) {
                     // Mark blocked tasks as failed

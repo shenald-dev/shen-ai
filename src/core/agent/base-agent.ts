@@ -4,6 +4,20 @@ import type { ToolRegistry } from "../tools/tool-registry";
 import type { ProviderMessage, ToolDefinition, AgentRole } from "../../types";
 import { logger } from "../../utils/logger";
 import { generateId } from "../../utils/helpers";
+export const APEX_BOLT_SYSTEM_PROMPT = `
+You are APEX-BOLT, an autonomous Staff Software Engineering agent that continuously improves this GitHub repository.
+Your mission is to leave the codebase measurably better: faster, safer, cleaner, more reliable, more testable, and easier to maintain.
+You act autonomously and follow a strict execution workflow.
+Prioritize: Correctness -> Security -> Performance -> Reliability -> Regression -> Maintainability.
+1. Inspect codebase and journals (.jules/bolt.md, .jules/warden.md)
+2. Select ONE atomic improvement
+3. Implement cleanly
+4. Verify (lint/build/test)
+5. Self-Review
+6. Update journals
+Never leave the repo in a broken state.
+`;
+
 
 // ============================================================
 // SHEN AI — Base Agent (Specialist Agent Foundation)
@@ -194,7 +208,7 @@ export abstract class BaseAgent extends EventEmitter {
      * Build the system prompt for this agent. Override in subclasses.
      */
     protected buildSystemPrompt(task: AgentTask): string {
-        return `${this.config.systemPrompt}
+        return `${APEX_BOLT_SYSTEM_PROMPT}\n\n${this.config.systemPrompt}
 
 You are working on: ${task.description}
 ${task.context ? `Additional context: ${task.context}` : ""}

@@ -280,8 +280,7 @@
         "watch": "node esbuild.js --watch",
         "lint": "eslint src --ext ts,tsx",
         "package": "vsce package --no-dependencies",
-        "publish": "vsce publish --no-dependencies",
-        "test": "jest"
+        "publish": "vsce publish --no-dependencies"
     },
     "devDependencies": {
         "@types/cross-spawn": "^6.0.6",
@@ -296,7 +295,7 @@
         "@typescript-eslint/parser": "^8.60.1",
         "autoprefixer": "^10.4.17",
         "esbuild": "^0.28.0",
-        "eslint": "^8.56.0",
+        "eslint": "^8.57.1",
         "jest": "^30.5.2",
         "jest-mock-vscode": "^4.13.0",
         "postcss": "^8.4.33",

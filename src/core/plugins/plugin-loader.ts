@@ -22,15 +22,8 @@ import type { MemoryManager } from "../memory/memory-manager";
 import type { RAGEngine } from "../memory/rag-engine";
 import type { MCPClient } from "../tools/mcp-client";
 import type * as vscode from "vscode";
-import { execFile } from "child_process";
-import { promisify } from "util";
-<<<<<<< HEAD
-import { parse } from "shell-quote";
-=======
 import spawn from "cross-spawn";
->>>>>>> 09b65f34 (Fix command injection vulnerability in plugin loader)
-
-const execFileAsync = promisify(execFile);
+import { parse } from "shell-quote";
 
 // ============================================================
 // SHEN AI — Plugin Loader
@@ -279,7 +272,6 @@ export class PluginLoader extends EventEmitter {
     private createPluginContext(manifest: PluginManifest, pluginPath: string): PluginContext {
         const pluginId = manifest.id;
         const storagePath = path.join(this.pluginsDir, pluginId, ".data");
-
         if (!fs.existsSync(storagePath)) {
             fs.mkdirSync(storagePath, { recursive: true });
         }
@@ -408,14 +400,37 @@ export class PluginLoader extends EventEmitter {
                 const root = getWorkspaceRoot() || process.cwd();
                 const file = args[0];
                 const cmdArgs = args.slice(1);
-
-                const { stdout, stderr } = await execFileAsync(file, cmdArgs, {
-                    cwd: root,
-                    timeout: 30000,
-                    maxBuffer: 1024 * 1024,
-                    shell: false,
+                return new Promise((resolve, reject) => {
+                    const child = spawn(file, cmdArgs, {
+                        cwd: root,
+                        timeout: 30000,
+                    });
+                    let stdout = "";
+                    let stderr = "";
+                    let stdoutLen = 0;
+                    let stderrLen = 0;
+                    const maxBuffer = 1024 * 1024;
+                    child.stdout?.on("data", (data) => {
+                        stdoutLen += data.length;
+                        if (stdoutLen > maxBuffer) { child.kill(); reject(new Error("maxBuffer exceeded")); return; }
+                        stdout += data.toString();
+                    });
+                    child.stderr?.on("data", (data) => {
+                        stderrLen += data.length;
+                        if (stderrLen > maxBuffer) { child.kill(); reject(new Error("maxBuffer exceeded")); return; }
+                        stderr += data.toString();
+                    });
+                    child.on("error", (error) => {
+                        reject(error);
+                    });
+                    child.on("close", (code) => {
+                        if (code !== 0) {
+                            reject(new Error(`Command failed with exit code ${code}\nStderr: ${stderr}`));
+                        } else {
+                            resolve({ stdout, stderr });
+                        }
+                    });
                 });
-                return { stdout, stderr };
             },
 
             sendToWebview: (action: string, payload: unknown) => {
