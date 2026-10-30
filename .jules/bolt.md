@@ -28,3 +28,7 @@
 ## 2026-10-27 - Performance Optimization: O(N^2) Array Search in Hot Path
 - **Learning:** In `swarm-orchestrator.ts`, resolving task dependencies inside a `while (true)` loop used nested array iterators (`.filter()`, `.every()`, `.find()`), causing an O(N^2) bottleneck.
 - **Action:** Refactored the array search approach into a precomputed `Map` per loop iteration, allowing O(1) dependency lookups and bringing the algorithmic complexity down to O(N).
+
+## 2026-10-30 - Security/Reliability: Properly Handle Child Process Exit Codes When Using `spawn`
+- **Learning:** When using `spawn` (e.g. `cross-spawn`) and wrapping it in a Promise, blindly calling `resolve()` on the `close` event swallows non-zero exit codes. This leads to silent failures where tests or commands fail but the orchestrator believes they succeeded.
+- **Action:** Fixed `src/core/builder/feature-builder.ts` to check the `code` argument in `child.on('close', (code) => { ... })`. If `code !== 0`, it correctly calls `reject(...)` to bubble up command failures. Also explicitly rejected Promises on `maxBuffer` termination to avoid hanging process state. Future uses of `spawn` in a Promise must include exit code checks.

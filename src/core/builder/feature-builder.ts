@@ -450,16 +450,28 @@ Respond with ONLY the file content (no markdown code blocks).`;
 
                         child.stdout?.on('data', (data: Buffer) => {
                             stdout += data.toString();
-                            if (stdout.length > 1024 * 1024) child.kill();
+                            if (stdout.length > 1024 * 1024) {
+                                child.kill();
+                                reject(new Error("maxBuffer exceeded"));
+                            }
                         });
 
                         child.stderr?.on('data', (data: Buffer) => {
                             stderr += data.toString();
-                            if (stderr.length > 1024 * 1024) child.kill();
+                            if (stderr.length > 1024 * 1024) {
+                                child.kill();
+                                reject(new Error("maxBuffer exceeded"));
+                            }
                         });
 
                         child.on('error', (err: Error) => reject(err));
-                        child.on('close', () => resolve({ stdout, stderr }));
+                        child.on('close', (code: number | null) => {
+                            if (code !== 0) {
+                                reject(new Error(`Command failed with exit code ${code}\nStderr: ${stderr}`));
+                            } else {
+                                resolve({ stdout, stderr });
+                            }
+                        });
                     });
 
                     step.result = result.stdout || result.stderr || "Command completed";
@@ -506,16 +518,28 @@ Respond with ONLY the file content (no markdown code blocks).`;
 
                         child.stdout?.on('data', (data: Buffer) => {
                             stdout += data.toString();
-                            if (stdout.length > 1024 * 1024) child.kill();
+                            if (stdout.length > 1024 * 1024) {
+                                child.kill();
+                                reject(new Error("maxBuffer exceeded"));
+                            }
                         });
 
                         child.stderr?.on('data', (data: Buffer) => {
                             stderr += data.toString();
-                            if (stderr.length > 1024 * 1024) child.kill();
+                            if (stderr.length > 1024 * 1024) {
+                                child.kill();
+                                reject(new Error("maxBuffer exceeded"));
+                            }
                         });
 
                         child.on('error', (err: Error) => reject(err));
-                        child.on('close', () => resolve({ stdout, stderr }));
+                        child.on('close', (code: number | null) => {
+                            if (code !== 0) {
+                                reject(new Error(`Command failed with exit code ${code}\nStderr: ${stderr}`));
+                            } else {
+                                resolve({ stdout, stderr });
+                            }
+                        });
                     });
 
                     step.result = result.stdout || result.stderr;
