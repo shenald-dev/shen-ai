@@ -97,5 +97,10 @@ If you modify SHEN AI locally and want to publish your version:
 ---
 
 <div align="center">
+  <b>Licensed under GPL-3.0-or-later.
+
+---
+
+<div align="center">
   <b>Built with ❤️ by Shenal D (<a href="https://github.com/shenald-dev">@shenald-dev</a>) and advanced AI engineering.</b>
 </div>
