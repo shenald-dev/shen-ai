@@ -418,9 +418,13 @@ Respond with ONLY valid JSON:
                     break;
                 }
 
-                // No ready tasks and nothing running — wait briefly
-                await new Promise((resolve) => setTimeout(resolve, 500));
-                continue;
+                // Deadlock detected: no tasks are ready, nothing is running, and we are not blocked by a failed dependency.
+                // This means there's a circular dependency or a missing dependency.
+                for (const st of pendingTasks) {
+                    st.status = "failed";
+                    st.error = "Deadlock detected: unresolvable or circular dependency";
+                }
+                break;
             }
 
             // Assign ready tasks to idle agents
