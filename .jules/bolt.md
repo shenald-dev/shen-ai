@@ -32,3 +32,7 @@
 ## 2026-10-30 - Security/Reliability: Properly Handle Child Process Exit Codes When Using `spawn`
 - **Learning:** When using `spawn` (e.g. `cross-spawn`) and wrapping it in a Promise, blindly calling `resolve()` on the `close` event swallows non-zero exit codes. This leads to silent failures where tests or commands fail but the orchestrator believes they succeeded.
 - **Action:** Fixed `src/core/builder/feature-builder.ts` to check the `code` argument in `child.on('close', (code) => { ... })`. If `code !== 0`, it correctly calls `reject(...)` to bubble up command failures. Also explicitly rejected Promises on `maxBuffer` termination to avoid hanging process state. Future uses of `spawn` in a Promise must include exit code checks.
+
+## 2026-11-01 - Security & Reliability: Prevent Command Injection and Resource Exhaustion
+- **Learning:** Direct use of `child_process.exec` is vulnerable to command injection and can cause unexpected hangs if processes produce large outputs without bounds. Using string concatenation for command arguments opens up injection vectors.
+- **Action:** Migrated uses of `exec` to `cross-spawn`, enforcing safe arrays for argument parsing. Used `shell-quote` specifically to safely parse arbitrary tool commands and reject shell operators. Wrapped these calls with proper Promise handling that strictly checks the exit code on the `close` event and implements a strict `maxBuffer` to prevent memory exhaustion DoS vectors. Future process executions must avoid `exec` and properly bounds-check `spawn`.
