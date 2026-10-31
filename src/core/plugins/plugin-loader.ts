@@ -25,12 +25,12 @@ import type * as vscode from "vscode";
 import spawn from "cross-spawn";
 import { parse } from "shell-quote";
 
-// ============================================================
+// ------------------------------------------------------------
 // SHEN AI — Plugin Loader
 // Discovers, loads, activates, and manages SHEN AI plugins.
 // Plugins are TypeScript/JavaScript modules that extend
 // the agent with custom tools, commands, and behaviors.
-// ============================================================
+// ------------------------------------------------------------
 
 export interface LoadedPlugin {
     id: string;

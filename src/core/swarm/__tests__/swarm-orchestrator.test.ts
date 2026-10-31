@@ -53,10 +53,14 @@ describe("SwarmOrchestrator", () => {
             conflicts: 0
         };
 
-        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve("Timeout"), 1500));
+        let timerId: NodeJS.Timeout;
+        const timeoutPromise = new Promise((resolve) => {
+            timerId = setTimeout(() => resolve("Timeout"), 1500);
+        });
         const res = await Promise.race([orchestrator["executeSubTasks"](task as any), timeoutPromise]);
         expect(res).not.toBe("Timeout");
         expect(task.subTasks[0].status).toBe("failed");
         expect(task.subTasks[0].error).toBe("Deadlock detected: unresolvable or circular dependency");
+        clearTimeout(timerId!);
     });
 });
