@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **[Fixed]:** Fixed an infinite loop / deadlock bug in `SwarmOrchestrator` when encountering circular or missing task dependencies.
+- **Git Operations:** Migrated `GitTools` and `CheckpointManager` command execution to array-based `cross-spawn` processes, eliminating shell argument concatenation and shell injection risks.
+- **Diff Parsing:** Fixed diff line addition and deletion counts in `GitTools` to avoid matching `+++` and `---` file header lines.
+- **Plugin Loader:** Added promise settlement guards to prevent duplicate rejections when child processes emit error and close events or exceed buffer limits.
+- **Cross-Platform Tests:** Updated plugin loader test commands to cross-platform Node invocations for reliable execution on Windows, Linux, and macOS.
+
+### Added
+- **Test Suite:** Added comprehensive unit test coverage for `GitTools` covering status summaries, branch actions, commit formatting, diff parsing, and process failure handling.
 
 ## [1.0.0] - 2026-05-02
 

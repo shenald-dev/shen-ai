@@ -194,7 +194,7 @@ export class PluginLoader extends EventEmitter {
             }
 
             // Create plugin context
-            const context = this.createPluginContext(manifest, pluginPath);
+            const context = this.createPluginContext(manifest);
 
             // Activate the plugin
             await plugin.activate(context);
@@ -269,7 +269,7 @@ export class PluginLoader extends EventEmitter {
     /**
      * Create the PluginContext object passed to plugins with permission enforcement.
      */
-    private createPluginContext(manifest: PluginManifest, pluginPath: string): PluginContext {
+    private createPluginContext(manifest: PluginManifest): PluginContext {
         const pluginId = manifest.id;
         const storagePath = path.join(this.pluginsDir, pluginId, ".data");
         if (!fs.existsSync(storagePath)) {
@@ -401,6 +401,17 @@ export class PluginLoader extends EventEmitter {
                 const file = args[0];
                 const cmdArgs = args.slice(1);
                 return new Promise((resolve, reject) => {
+                    let settled = false;
+                    const settle = (err: Error | null, res?: { stdout: string; stderr: string }) => {
+                        if (settled) return;
+                        settled = true;
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(res!);
+                        }
+                    };
+
                     const child = spawn(file, cmdArgs, {
                         cwd: root,
                         timeout: 30000,
@@ -412,22 +423,30 @@ export class PluginLoader extends EventEmitter {
                     const maxBuffer = 1024 * 1024;
                     child.stdout?.on("data", (data) => {
                         stdoutLen += data.length;
-                        if (stdoutLen > maxBuffer) { child.kill(); reject(new Error("maxBuffer exceeded")); return; }
+                        if (stdoutLen > maxBuffer) {
+                            child.kill();
+                            settle(new Error("maxBuffer exceeded"));
+                            return;
+                        }
                         stdout += data.toString();
                     });
                     child.stderr?.on("data", (data) => {
                         stderrLen += data.length;
-                        if (stderrLen > maxBuffer) { child.kill(); reject(new Error("maxBuffer exceeded")); return; }
+                        if (stderrLen > maxBuffer) {
+                            child.kill();
+                            settle(new Error("maxBuffer exceeded"));
+                            return;
+                        }
                         stderr += data.toString();
                     });
                     child.on("error", (error) => {
-                        reject(error);
+                        settle(error);
                     });
                     child.on("close", (code) => {
                         if (code !== 0) {
-                            reject(new Error(`Command failed with exit code ${code}\nStderr: ${stderr}`));
+                            settle(new Error(`Command failed with exit code ${code}\nStderr: ${stderr}`));
                         } else {
-                            resolve({ stdout, stderr });
+                            settle(null, { stdout, stderr });
                         }
                     });
                 });

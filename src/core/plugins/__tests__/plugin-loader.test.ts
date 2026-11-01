@@ -77,12 +77,12 @@ describe("PluginLoader Command Injection Fix", () => {
             main: "index.js",
             permissions: {
                 granted: ["commandExec"],
-                commandAllowlist: ["echo *"]
+                commandAllowlist: ["node *"]
             }
         };
 
         const context = pluginLoader.createPluginContext(manifest, "/mock/path");
-        const { stdout } = await context.executeCommand("echo hello world");
+        const { stdout } = await context.executeCommand('node -e "console.log(\'hello world\')"');
         expect(stdout.trim()).toBe("hello world");
     });
 
@@ -96,16 +96,16 @@ describe("PluginLoader Command Injection Fix", () => {
             main: "index.js",
             permissions: {
                 granted: ["commandExec"],
-                commandAllowlist: ["ls *"] // Using ls on a non-existent file will return non-zero
+                commandAllowlist: ["node *"]
             }
         };
 
         const context = pluginLoader.createPluginContext(manifest, "/mock/path");
         try {
-            await context.executeCommand("ls non_existent_file_that_should_fail_12345");
+            await context.executeCommand('node -e "process.exit(1)"');
             throw new Error("Expected executeCommand to throw when command fails");
         } catch (error: any) {
-            expect(error.message).toMatch(/Command failed with exit code/);
+            expect(error.message).toMatch(/Command failed with exit code 1/);
         }
     });
 });

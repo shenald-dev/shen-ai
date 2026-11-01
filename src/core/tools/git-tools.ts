@@ -1,10 +1,6 @@
-import * as vscode from "vscode";
-import { exec } from "child_process";
-import { promisify } from "util";
+import spawn from "cross-spawn";
 import { logger } from "../../utils/logger";
 import { getWorkspaceRoot } from "../../utils/helpers";
-
-const execAsync = promisify(exec);
 
 // ============================================================
 // SHEN AI — Git Tools
@@ -54,8 +50,8 @@ export interface GitDiff {
 export class GitTools {
     private workspaceRoot: string | undefined;
 
-    constructor() {
-        this.workspaceRoot = getWorkspaceRoot();
+    constructor(workspaceRoot?: string) {
+        this.workspaceRoot = workspaceRoot || getWorkspaceRoot();
     }
 
     private async runGit(args: string[], cwd?: string): Promise<string> {
@@ -64,19 +60,65 @@ export class GitTools {
             throw new Error("No workspace folder open.");
         }
 
-        try {
-            const { stdout, stderr } = await execAsync(`git ${args.join(" ")}`, {
+        return new Promise((resolve, reject) => {
+            let settled = false;
+            const settle = (err?: Error, result?: string) => {
+                if (settled) return;
+                settled = true;
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result || "");
+                }
+            };
+
+            const child = spawn("git", args, {
                 cwd: dir,
-                maxBuffer: 10 * 1024 * 1024,
+                timeout: 30000,
             });
-            return stdout.trim();
-        } catch (error) {
-            const err = error as { stdout?: string; stderr?: string; message: string };
-            if (err.stderr && !err.stderr.includes("warning")) {
-                throw new Error(`Git error: ${err.stderr.trim()}`);
-            }
-            return err.stdout || "";
-        }
+
+            let stdout = "";
+            let stderr = "";
+            let stdoutLen = 0;
+            let stderrLen = 0;
+            const maxBuffer = 10 * 1024 * 1024;
+
+            child.stdout?.on("data", (data: Buffer) => {
+                stdoutLen += data.length;
+                if (stdoutLen > maxBuffer) {
+                    child.kill();
+                    settle(new Error("Git maxBuffer exceeded"));
+                    return;
+                }
+                stdout += data.toString();
+            });
+
+            child.stderr?.on("data", (data: Buffer) => {
+                stderrLen += data.length;
+                if (stderrLen > maxBuffer) {
+                    child.kill();
+                    settle(new Error("Git maxBuffer exceeded"));
+                    return;
+                }
+                stderr += data.toString();
+            });
+
+            child.on("error", (error) => {
+                settle(error);
+            });
+
+            child.on("close", (code) => {
+                if (code !== 0) {
+                    if (stderr && !stderr.includes("warning")) {
+                        settle(new Error(`Git error: ${stderr.trim()}`));
+                    } else {
+                        settle(undefined, stdout.trim());
+                    }
+                } else {
+                    settle(undefined, stdout.trim());
+                }
+            });
+        });
     }
 
     /**
@@ -175,13 +217,6 @@ export class GitTools {
      * Get diff for staged or unstaged changes.
      */
     async getDiff(staged: boolean = false, file?: string): Promise<GitDiff[]> {
-        const args = ["diff"];
-        if (staged) args.push("--cached");
-        if (file) args.push("--", file);
-        args.push("--stat", "--unified=0");
-
-        const statOutput = await this.runGit([...args]);
-
         // Get full diff
         const diffArgs = ["diff"];
         if (staged) diffArgs.push("--cached");
@@ -201,8 +236,8 @@ export class GitTools {
             const fileMatch = fileDiff.match(/diff --git a\/(.+?) b\/(.+)/);
             const fileName = fileMatch ? fileMatch[2] : "unknown";
 
-            const additions = (fileDiff.match(/^\+/gm) || []).length;
-            const deletions = (fileDiff.match(/^-/gm) || []).length;
+            const additions = (fileDiff.match(/^\+(?!\+\+)/gm) || []).length;
+            const deletions = (fileDiff.match(/^-(?!--)/gm) || []).length;
 
             diffs.push({
                 file: fileName,
@@ -241,7 +276,7 @@ export class GitTools {
      * Create a commit.
      */
     async commit(message: string, amend: boolean = false): Promise<string> {
-        const args = ["commit", "-m", `"${message}"`, "--"];
+        const args = ["commit", "-m", message];
         if (amend) args.push("--amend", "--no-edit");
         return this.runGit(args);
     }
@@ -250,7 +285,7 @@ export class GitTools {
      * Create a new branch.
      */
     async createBranch(name: string, fromBranch?: string): Promise<string> {
-        const args = ["checkout", "-b", name, "--"];
+        const args = ["checkout", "-b", name];
         if (fromBranch) args.push(fromBranch);
         return this.runGit(args);
     }
@@ -259,21 +294,21 @@ export class GitTools {
      * Switch to a branch.
      */
     async switchBranch(name: string): Promise<string> {
-        return this.runGit(["checkout", "--", name]);
+        return this.runGit(["checkout", name]);
     }
 
     /**
      * Delete a branch.
      */
     async deleteBranch(name: string, force: boolean = false): Promise<string> {
-        return this.runGit(["branch", force ? "-D" : "-d", "--", name]);
+        return this.runGit(["branch", force ? "-D" : "-d", name]);
     }
 
     /**
      * Pull from remote.
      */
     async pull(remote: string = "origin", branch?: string): Promise<string> {
-        const args = ["pull", remote, "--"];
+        const args = ["pull", remote];
         if (branch) args.push(branch);
         return this.runGit(args);
     }
@@ -284,7 +319,6 @@ export class GitTools {
     async push(remote: string = "origin", branch?: string, setUpstream: boolean = false): Promise<string> {
         const args = ["push", remote];
         if (setUpstream) args.push("-u");
-        args.push("--");
         if (branch) args.push(branch);
         return this.runGit(args);
     }
@@ -313,7 +347,7 @@ export class GitTools {
      */
     async stash(message?: string): Promise<string> {
         const args = ["stash", "push"];
-        if (message) args.push("-m", `"${message}"`);
+        if (message) args.push("-m", message);
         return this.runGit(args);
     }
 

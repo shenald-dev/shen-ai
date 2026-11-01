@@ -611,7 +611,6 @@ export class ToolRegistry {
             if (hunkMatch) {
                 const oldStart = parseInt(hunkMatch[1]);
                 const oldCount = parseInt(hunkMatch[2] === undefined ? "1" : hunkMatch[2]);
-                const newStart = parseInt(hunkMatch[3]);
 
                 i++;
 

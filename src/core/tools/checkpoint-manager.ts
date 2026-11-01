@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as cp from "child_process";
+import spawn from "cross-spawn";
 import * as vscode from "vscode";
 import { EventEmitter } from "events";
 import { logger } from "../../utils/logger";
@@ -501,32 +501,53 @@ export class CheckpointManager extends EventEmitter {
 
     // --- Private Methods ---
 
+    private runGit(args: string[], cwd: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            let settled = false;
+            const settle = (err?: Error, result?: string) => {
+                if (settled) return;
+                settled = true;
+                if (err) reject(err);
+                else resolve(result || "");
+            };
+
+            const child = spawn("git", args, { cwd, timeout: 30000 });
+            let stdout = "";
+            let stderr = "";
+            child.stdout?.on("data", (data: Buffer) => { stdout += data.toString(); });
+            child.stderr?.on("data", (data: Buffer) => { stderr += data.toString(); });
+            child.on("error", (err) => settle(err));
+            child.on("close", (code) => {
+                if (code !== 0) {
+                    settle(new Error(`Git command failed (${code}): ${stderr}`));
+                } else {
+                    settle(undefined, stdout.trim());
+                }
+            });
+        });
+    }
+
     private async createGitCommit(message: string): Promise<string | undefined> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) return undefined;
 
         const cwd = workspaceFolders[0].uri.fsPath;
-        const util = await import("util");
-        const execPromise = util.promisify(cp.exec);
 
         try {
             // Check git status first
-            const statusResult = await execPromise("git status --porcelain", { cwd });
-            if (!statusResult.stdout.trim()) {
+            const statusResult = await this.runGit(["status", "--porcelain"], cwd);
+            if (!statusResult.trim()) {
                 return undefined; // Nothing to commit
             }
 
             // Stage and commit
-            await execPromise("git add .", { cwd });
-            const commitResult = await execPromise(
-                `git commit -m "🤖 SHEN: ${message.replace(/"/g, '\\"')}"`,
-                { cwd }
-            );
+            await this.runGit(["add", "."], cwd);
+            await this.runGit(["commit", "-m", `checkpoint: ${message}`], cwd);
 
             // Get the commit hash
-            const hashResult = await execPromise("git rev-parse HEAD", { cwd });
-            return hashResult.stdout.trim();
-        } catch (e) {
+            const hashResult = await this.runGit(["rev-parse", "HEAD"], cwd);
+            return hashResult.trim();
+        } catch {
             // Git might not be initialized or there might be nothing to commit
             return undefined;
         }
@@ -539,10 +560,7 @@ export class CheckpointManager extends EventEmitter {
         }
 
         const cwd = workspaceFolders[0].uri.fsPath;
-        const util = await import("util");
-        const execPromise = util.promisify(cp.exec);
-
-        await execPromise(`git reset --hard ${commitHash}`, { cwd });
+        await this.runGit(["reset", "--hard", commitHash], cwd);
     }
 
     private enforceTaskLimit(): void {
