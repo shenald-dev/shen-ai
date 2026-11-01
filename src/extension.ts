@@ -4,7 +4,8 @@ import { ChatManager } from "./core/chat/chat-manager";
 import { ToolRegistry } from "./core/tools/tool-registry";
 import { ProviderRegistry } from "./core/providers/provider-registry";
 import { ConfigManager } from "./utils/config";
-import { logger, LogLevel } from "./utils/logger";
+import { logger } from "./utils/logger";
+import { OrchestratorAgent } from "./core/agent/orchestrator-agent";
 import { getActiveEditorContent } from "./utils/helpers";
 
 // Phase 3: Unique Features I
@@ -69,6 +70,7 @@ let swarmOrchestrator: SwarmOrchestrator;
 let featureBuilder: FeatureBuilder;
 let vitalMonitor: VitalMonitor;
 let cityGenerator: CityGenerator;
+let orchestratorAgent: OrchestratorAgent;
 
 // Checkpoint System
 let checkpointManager: CheckpointManager;
@@ -126,6 +128,20 @@ export function activate(context: vscode.ExtensionContext): void {
     codeValidator = new CodeValidator();
     conversationSummarizer = new ConversationSummarizer();
 
+    // Wire CodeValidator and BlastRadiusAnalyzer into ToolRegistry
+    toolRegistry.setCodeValidator(codeValidator);
+    toolRegistry.setBlastRadiusAnalyzer(blastRadiusAnalyzer);
+
+    // Initialize OrchestratorAgent and wire dependencies into ChatManager
+    orchestratorAgent = new OrchestratorAgent(providerRegistry, toolRegistry);
+    chatManager.setDependencies({
+        orchestrator: orchestratorAgent,
+        swarmOrchestrator,
+        vitalMonitor,
+        summarizer: conversationSummarizer,
+        activeFileProvider: () => getActiveEditorContent()?.filePath,
+    });
+
     // Analyze workspace for blast radius if enabled
     if (config.getFullConfig().enableBlastRadiusAnalyzer && workspaceRoot) {
         blastRadiusAnalyzer.analyzeWorkspace().then(() => {
@@ -179,7 +195,7 @@ export function activate(context: vscode.ExtensionContext): void {
     featureBuilder.on("buildStarted", (build) => {
         webviewProvider.sendAgentStatus({ type: "feature_build_started", buildId: build.id });
     });
-    featureBuilder.on("stepCompleted", ({ build, step, progress }) => {
+    featureBuilder.on("stepCompleted", ({ step, progress }) => {
         webviewProvider.sendAgentStatus({
             type: "feature_build_progress",
             step: step.title,
@@ -699,7 +715,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
                         const summary = cityGenerator.getCitySummary(city);
 
                         // Also generate 2D map data
-                        const map2d = cityGenerator.generate2DMap();
+                        cityGenerator.generate2DMap();
 
                         // Save city data for potential visualization
                         const cityDataPath = path.join(os.homedir(), ".shen-ai", "city-data.json");
@@ -734,7 +750,6 @@ function registerCommands(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         vscode.commands.registerCommand("shen.showStats", () => {
             const correctionStats = correctionTracker.getStats();
-            const behaviorStats = behaviorAnalyzer.getStats();
             const intentStats = intentEngine.getStats();
             const contextStats = chatManager.getContextStats();
             const graphStats = graphStore.getStats();
@@ -914,6 +929,20 @@ ${blast.direct.length > 0 ? "Direct:\n" + blast.direct.map((n) => `  • ${n.nam
 ${blast.indirect.length > 0 ? "\nIndirect:\n" + blast.indirect.slice(0, 10).map((n) => `  • ${n.name} (${n.type})`).join("\n") : ""}`;
 
             vscode.window.showInformationMessage(message, { modal: true });
+        })
+    );
+
+    // Test selection in isolated sandbox
+    context.subscriptions.push(
+        vscode.commands.registerCommand("shen.testInSandbox", () => {
+            const content = getActiveEditorContent();
+            if (content?.selection) {
+                const res = sandboxManager.execute(content.selection);
+                const status = res.success ? "✅ Success" : "❌ Error";
+                vscode.window.showInformationMessage(`Sandbox: ${status}\nOutput: ${res.output || res.error || "(No output)"}`);
+            } else {
+                vscode.window.showWarningMessage("Select code in the active editor to test in the sandbox.");
+            }
         })
     );
 

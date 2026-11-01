@@ -3,7 +3,6 @@ import type {
     ToolCall,
     ToolResult,
     ProviderMessage,
-    MessageType,
     PersonalityType,
     ProviderToolCall,
 } from "../../types";
@@ -11,8 +10,24 @@ import type { ProviderRegistry } from "../providers/provider-registry";
 import type { ToolRegistry } from "../tools/tool-registry";
 import { ConversationHistory } from "./conversation-history";
 import { ContextManager } from "../memory/context-manager";
-import { generateId, estimateTokens } from "../../utils/helpers";
+import { generateId } from "../../utils/helpers";
 import { logger } from "../../utils/logger";
+import type { OrchestratorAgent } from "../agent/orchestrator-agent";
+import type { ReviewerAgent } from "../agent/reviewer-agent";
+import type { DebuggerAgent } from "../agent/debugger-agent";
+import type { ArchitectAgent } from "../agent/architect-agent";
+import type { ResearchAgent } from "../agent/research-agent";
+import type { SwarmOrchestrator } from "../swarm/swarm-orchestrator";
+import type { VitalMonitor } from "../health/vital-monitor";
+import type { ConversationSummarizer } from "./conversation-summarizer";
+
+export interface ChatManagerDependencies {
+    orchestrator?: OrchestratorAgent;
+    swarmOrchestrator?: SwarmOrchestrator;
+    vitalMonitor?: VitalMonitor;
+    summarizer?: ConversationSummarizer;
+    activeFileProvider?: () => string | undefined;
+}
 
 // ============================================================
 // SHEN AI — Chat Manager (Core Agent Loop)
@@ -62,8 +77,14 @@ export class ChatManager {
     private isRunning: boolean;
     private currentAbortController: AbortController | null;
     private maxContextTokens: number;
+    private deps?: ChatManagerDependencies;
 
-    constructor(providerRegistry: ProviderRegistry, toolRegistry: ToolRegistry, maxContextTokens: number = 200000) {
+    constructor(
+        providerRegistry: ProviderRegistry,
+        toolRegistry: ToolRegistry,
+        maxContextTokens: number = 200000,
+        deps?: ChatManagerDependencies
+    ) {
         this.providerRegistry = providerRegistry;
         this.toolRegistry = toolRegistry;
         this.history = new ConversationHistory();
@@ -71,6 +92,11 @@ export class ChatManager {
         this.isRunning = false;
         this.currentAbortController = null;
         this.maxContextTokens = maxContextTokens;
+        this.deps = deps;
+    }
+
+    public setDependencies(deps: ChatManagerDependencies): void {
+        this.deps = { ...this.deps, ...deps };
     }
 
     getHistory(): ConversationHistory {
@@ -122,6 +148,19 @@ export class ChatManager {
                 timestamp: Date.now(),
             };
             this.history.addMessage(userMessage);
+
+            // Check for slash commands
+            if (userContent.trim().startsWith("/")) {
+                const trimmed = userContent.trim();
+                const spaceIdx = trimmed.indexOf(" ");
+                const command = spaceIdx === -1 ? trimmed.toLowerCase() : trimmed.substring(0, spaceIdx).toLowerCase();
+                const args = spaceIdx === -1 ? "" : trimmed.substring(spaceIdx + 1).trim();
+
+                const handled = await this.handleSlashCommand(command, args, callbacks);
+                if (handled) {
+                    return;
+                }
+            }
 
             // Build system prompt with feature injections
             const systemPrompt = this.buildSystemPrompt(personality, agentMode, featureSettings);
@@ -263,6 +302,22 @@ Remember: You are operating inside a real development environment. Your actions 
         callbacks: ChatCallbacks,
         agentMode: "act" | "plan"
     ): Promise<void> {
+        // Automatic context compression via ConversationSummarizer
+        if (this.deps?.summarizer && this.deps.summarizer.needsSummarization(this.history.getMessages(), this.maxContextTokens)) {
+            try {
+                const activeConv = this.history.getActiveConversation();
+                const convId = activeConv ? activeConv.id : "current";
+                const { summary, messagesToKeep } = await this.deps.summarizer.summarizeConversation(
+                    this.history.getMessages(),
+                    convId
+                );
+                this.history.replaceWithSummary(summary.summaryText, messagesToKeep);
+                logger.info(`Context auto-summarized: preserved ${messagesToKeep.length} recent messages, saved ${summary.tokensSaved} tokens.`);
+            } catch (summarizeErr) {
+                logger.warn("Conversation summarization failed, continuing with full context:", summarizeErr);
+            }
+        }
+
         let toolDefinitions = this.toolRegistry.getToolDefinitions();
         if (agentMode === "plan") {
             const allowedTools = new Set(["read_file", "list_files", "search_files", "git_status", "git_branch", "git_log"]);
@@ -451,5 +506,254 @@ Remember: You are operating inside a real development environment. Your actions 
      */
     getContextStats(): { fileContexts: number; totalFileTokens: number } {
         return this.contextManager.getStats();
+    }
+
+    private async handleSlashCommand(
+        command: string,
+        args: string,
+        callbacks: ChatCallbacks
+    ): Promise<boolean> {
+        const activeFile = this.deps?.activeFileProvider?.();
+
+        switch (command) {
+            case "/help": {
+                const helpText = `### 🧬 SHEN AI — Command & Specialist Guide
+
+| Command | Specialist / Purpose | Description |
+| :--- | :--- | :--- |
+| \`/review [file]\` | **Reviewer Agent** | Performs a deep security, quality, and maintainability audit |
+| \`/debug <issue>\` | **Debugger Agent** | Diagnoses root cause, inspects stack traces, and suggests fixes |
+| \`/architect <feature>\` | **Architect Agent** | Designs module topology, file blueprints, and interface contracts |
+| \`/research <topic>\` | **Research Agent** | Researches codebase structure, API usage, and design patterns |
+| \`/swarm <task>\` | **Swarm Orchestrator** | Decomposes and executes parallel multi-agent tasks |
+| \`/health\` | **Vital Monitor** | Runs real-time health diagnostic scan with prescriptions |
+| \`/clear\` | **Session** | Clears the active chat conversation history |
+| \`/help\` | **Guide** | Displays this command guide |
+
+**Modes:** Toggle between **Plan Mode** (read-only architectural planning) and **Act Mode** (autonomous file editing and command execution).`;
+                callbacks.onStreaming?.(helpText, true);
+                const assistantMessage: ChatMessage = {
+                    id: generateId(),
+                    type: "assistant",
+                    content: helpText,
+                    timestamp: Date.now(),
+                };
+                this.history.addMessage(assistantMessage);
+                callbacks.onDone?.(helpText, 0);
+                return true;
+            }
+
+            case "/health": {
+                callbacks.onStreaming?.("💓 Initiating workspace health diagnostic scan...\n", false);
+                if (this.deps?.vitalMonitor) {
+                    try {
+                        const report = await this.deps.vitalMonitor.scanHealth();
+                        const statusEmoji = report.overallStatus === "excellent" ? "🟢" : report.overallStatus === "good" ? "🟡" : "🔴";
+                        let responseText = `## 💓 Workspace Health Report\n\n`;
+                        responseText += `**Overall Score**: ${statusEmoji} **${report.overallScore}/100** (${report.overallStatus.toUpperCase()})\n\n`;
+                        responseText += `### Key Metrics\n`;
+                        for (const metric of report.metrics) {
+                            const trend = metric.trend === "improving" ? "📈" : metric.trend === "degrading" ? "📉" : "➡️";
+                            responseText += `- **${metric.name}**: ${Math.round(metric.value)} ${metric.unit} (${metric.status}) ${trend} — ${metric.description}\n`;
+                        }
+                        if (report.prescriptions.length > 0) {
+                            responseText += `\n### Recommended Prescriptions\n`;
+                            for (const rx of report.prescriptions.slice(0, 5)) {
+                                responseText += `- **[${rx.severity.toUpperCase()}] ${rx.title}**: ${rx.suggestedAction}\n`;
+                            }
+                        }
+                        callbacks.onStreaming?.(responseText, true);
+                        const assistantMessage: ChatMessage = {
+                            id: generateId(),
+                            type: "assistant",
+                            content: responseText,
+                            timestamp: Date.now(),
+                        };
+                        this.history.addMessage(assistantMessage);
+                        callbacks.onDone?.(responseText, 0);
+                        return true;
+                    } catch (err) {
+                        callbacks.onError?.(`Health scan failed: ${(err as Error).message}`);
+                        return true;
+                    }
+                } else {
+                    const fallback = "Health monitor is not configured in this environment.";
+                    callbacks.onStreaming?.(fallback, true);
+                    callbacks.onDone?.(fallback, 0);
+                    return true;
+                }
+            }
+
+            case "/swarm": {
+                if (!args) {
+                    callbacks.onError?.("Please specify a task for Swarm Mode, e.g.: `/swarm Refactor auth pipeline with tests`");
+                    return true;
+                }
+                callbacks.onStreaming?.(`🐝 Swarm Mode engaged. Decomposing task: "${args}"...\n`, false);
+                if (this.deps?.swarmOrchestrator) {
+                    try {
+                        const task = await this.deps.swarmOrchestrator.executeSwarmTask(args);
+                        const completed = task.subTasks.filter(s => s.status === "completed").length;
+                        const durationSec = task.duration ? Math.round(task.duration / 1000) : 0;
+                        let summary = `## 🐝 Swarm Execution Completed\n\n`;
+                        summary += `**Status**: ${task.status.toUpperCase()} (${completed}/${task.subTasks.length} subtasks succeeded in ${durationSec}s)\n\n`;
+                        summary += `### Subtasks\n`;
+                        for (const st of task.subTasks) {
+                            const icon = st.status === "completed" ? "✅" : "❌";
+                            summary += `- ${icon} **${st.description}** (${st.status})\n`;
+                            if (st.result) summary += `  ${st.result.substring(0, 150)}...\n`;
+                        }
+                        callbacks.onStreaming?.(summary, true);
+                        const assistantMessage: ChatMessage = {
+                            id: generateId(),
+                            type: "assistant",
+                            content: summary,
+                            timestamp: Date.now(),
+                        };
+                        this.history.addMessage(assistantMessage);
+                        callbacks.onDone?.(summary, 0);
+                        return true;
+                    } catch (err) {
+                        callbacks.onError?.(`Swarm execution failed: ${(err as Error).message}`);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            case "/review": {
+                callbacks.onStreaming?.("🔍 Reviewer Agent activated. Inspecting code quality and security...\n", false);
+                const reviewer = (this.deps?.orchestrator?.getAgent("reviewer") as ReviewerAgent) || null;
+                const targetFiles = args ? [args] : (activeFile ? [activeFile] : []);
+                if (reviewer) {
+                    try {
+                        const result = await reviewer.executeTask({
+                            id: `review_${Date.now()}`,
+                            description: args || "Review active file for security, performance, correctness, and architecture.",
+                            files: targetFiles,
+                            context: activeFile ? `Active editor file: ${activeFile}` : undefined,
+                            priority: "high",
+                        });
+                        const responseContent = result.content || "Review completed with no critical issues detected.";
+                        callbacks.onStreaming?.(responseContent, true);
+                        const assistantMessage: ChatMessage = {
+                            id: generateId(),
+                            type: "assistant",
+                            content: responseContent,
+                            timestamp: Date.now(),
+                            tokensUsed: result.tokensUsed,
+                        };
+                        this.history.addMessage(assistantMessage);
+                        callbacks.onDone?.(responseContent, result.tokensUsed || 0);
+                        return true;
+                    } catch (err) {
+                        callbacks.onError?.(`Reviewer failed: ${(err as Error).message}`);
+                        return true;
+                    }
+                }
+                break;
+            }
+
+            case "/debug": {
+                if (!args && !activeFile) {
+                    callbacks.onError?.("Please specify an error message, stack trace, or file to debug, e.g.: `/debug TypeError: cannot read properties of undefined`");
+                    return true;
+                }
+                callbacks.onStreaming?.("🐛 Debugger Agent activated. Analyzing root cause...\n", false);
+                const debuggerAgent = (this.deps?.orchestrator?.getAgent("debugger") as DebuggerAgent) || null;
+                const targetFiles = activeFile ? [activeFile] : [];
+                if (debuggerAgent) {
+                    try {
+                        const result = await debuggerAgent.debugError(args || "Diagnose potential runtime errors and edge cases", targetFiles);
+                        const responseContent = result.content || "Diagnosis complete.";
+                        callbacks.onStreaming?.(responseContent, true);
+                        const assistantMessage: ChatMessage = {
+                            id: generateId(),
+                            type: "assistant",
+                            content: responseContent,
+                            timestamp: Date.now(),
+                            tokensUsed: result.tokensUsed,
+                        };
+                        this.history.addMessage(assistantMessage);
+                        callbacks.onDone?.(responseContent, result.tokensUsed || 0);
+                        return true;
+                    } catch (err) {
+                        callbacks.onError?.(`Debugger failed: ${(err as Error).message}`);
+                        return true;
+                    }
+                }
+                break;
+            }
+
+            case "/architect": {
+                if (!args) {
+                    callbacks.onError?.("Please provide a feature description to architect, e.g.: `/architect Real-time notification pipeline with WebSockets`");
+                    return true;
+                }
+                callbacks.onStreaming?.("📐 Architect Agent activated. Formulating system design & component topology...\n", false);
+                const architectAgent = (this.deps?.orchestrator?.getAgent("architect") as ArchitectAgent) || null;
+                if (architectAgent) {
+                    try {
+                        const result = await architectAgent.designSystem(args, "High maintainability, modularity, and clean error boundaries", activeFile ? [activeFile] : undefined);
+                        const responseContent = result.content || "Architecture plan generated.";
+                        callbacks.onStreaming?.(responseContent, true);
+                        const assistantMessage: ChatMessage = {
+                            id: generateId(),
+                            type: "assistant",
+                            content: responseContent,
+                            timestamp: Date.now(),
+                            tokensUsed: result.tokensUsed,
+                        };
+                        this.history.addMessage(assistantMessage);
+                        callbacks.onDone?.(responseContent, result.tokensUsed || 0);
+                        return true;
+                    } catch (err) {
+                        callbacks.onError?.(`Architect failed: ${(err as Error).message}`);
+                        return true;
+                    }
+                }
+                break;
+            }
+
+            case "/research": {
+                if (!args) {
+                    callbacks.onError?.("Please specify a topic or question to research, e.g.: `/research How state synchronization is handled across webview and extension`");
+                    return true;
+                }
+                callbacks.onStreaming?.("🔬 Research Agent activated. Querying codebase and patterns...\n", false);
+                const researchAgent = (this.deps?.orchestrator?.getAgent("researcher") as ResearchAgent) || null;
+                if (researchAgent) {
+                    try {
+                        const result = await researchAgent.research(args, activeFile ? [activeFile] : undefined);
+                        const responseContent = result.content || "Research completed.";
+                        callbacks.onStreaming?.(responseContent, true);
+                        const assistantMessage: ChatMessage = {
+                            id: generateId(),
+                            type: "assistant",
+                            content: responseContent,
+                            timestamp: Date.now(),
+                            tokensUsed: result.tokensUsed,
+                        };
+                        this.history.addMessage(assistantMessage);
+                        callbacks.onDone?.(responseContent, result.tokensUsed || 0);
+                        return true;
+                    } catch (err) {
+                        callbacks.onError?.(`Researcher failed: ${(err as Error).message}`);
+                        return true;
+                    }
+                }
+                break;
+            }
+
+            case "/clear": {
+                this.history.clearMessages();
+                const clearMsg = "Conversation history has been cleared.";
+                callbacks.onStreaming?.(clearMsg, true);
+                callbacks.onDone?.(clearMsg, 0);
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -199,6 +199,27 @@ export class ConversationHistory {
         logger.info(`Truncated conversation ${conv.id} after message ${messageId} (${idx + 1} messages kept)`);
     }
 
+    /**
+     * Replace older messages with a structured conversation summary,
+     * preserving recent messages for active context.
+     */
+    replaceWithSummary(summaryText: string, messagesToKeep: ChatMessage[]): void {
+        const conv = this.getActiveConversation();
+        if (!conv) return;
+
+        const summaryMessage: ChatMessage = {
+            id: generateId(),
+            type: "system",
+            content: `[Previous Conversation Executive Summary]\n${summaryText}`,
+            timestamp: Date.now(),
+        };
+
+        conv.messages = [summaryMessage, ...messagesToKeep];
+        conv.updatedAt = Date.now();
+        conv.totalTokens = conv.messages.reduce((sum, m) => sum + (m.tokensUsed || 0), 0);
+        logger.info(`Compressed conversation ${conv.id}: preserved ${messagesToKeep.length} recent messages with executive summary`);
+    }
+
     deleteConversation(id: string): void {
         this.conversations.delete(id);
         if (this.activeConversationId === id) {

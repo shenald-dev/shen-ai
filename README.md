@@ -1,10 +1,10 @@
 <div align="center">
   <img src="assets/shen_ai_logo.png" width="200" alt="SHEN AI Logo" />
-  <h1>SHEN AI — Autonomous Coding Agent</h1>
+  <h1>SHEN AI — Autonomous Coding Agent (v1.0.0)</h1>
   <p><strong>A superior multi-agent, multi-provider AI coding assistant that thinks ahead, learns from you, and builds autonomously.</strong></p>
   <p>
     <img src="https://img.shields.io/github/license/shenald-dev/shen-ai?style=flat-square&color=00e5ff" alt="License">
-    <img src="https://img.shields.io/github/v/release/shenald-dev/shen-ai?style=flat-square&color=00e5ff" alt="Version">
+    <img src="https://img.shields.io/badge/version-1.0.0-00e5ff?style=flat-square" alt="Version">
     <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square&color=00e5ff" alt="PRs Welcome">
   </p>
 </div>
@@ -20,16 +20,38 @@ With SHEN AI, you get an AI that actually **modifies, tests, and reads your code
 
 ---
 
-## ✨ Key Features
+## ✨ Key Features (v1.0.0)
 
 | Feature | Description |
 |---------|-------------|
-| 🧠 **Act & Plan Modes** | Choose whether the AI should autonomously modify files and run commands (Act) or carefully analyze and write step-by-step implementation plans (Plan). |
-| 🤖 **Swarm Mode Orchestration** | Deploys specialized sub-agents (Coder, Architect, Debugger) that collaborate to solve complex problems faster than a single AI. |
-| 🧬 **Self-Evolving Prompts** | Tracks your corrections and edits. SHEN AI *learns* your style and preferences, meaning you never have to correct the same mistake twice. |
+| 🧠 **Act & Plan Modes** | Choose whether the AI should autonomously modify files and run commands (`Act`) or carefully analyze and write step-by-step implementation plans (`Plan`). |
+| ⚡ **Slash Command Engine** | Trigger dedicated specialist workflows in one keystroke: `/review`, `/debug`, `/architect`, `/research`, `/swarm`, and `/health` with popover autocomplete and quick-action chips. |
+| 🛡️ **Pre-Flight Validation Shield** | Automatically parses and validates TypeScript, JavaScript, and JSON syntax before writing changes to disk, preventing file corruption. |
+| 💥 **Blast Radius Dependency Analyzer** | Evaluates code genome impact in real time and attaches warnings to edits when modifying high-risk or widely-imported modules. |
+| 🗜️ **Dynamic Context Auto-Compressor** | Automatically condenses lengthy conversation history into structured executive summaries, preserving recent active context without token overflow. |
+| 🤖 **Specialist Agent Swarm** | Deploys specialized sub-agents (`ArchitectAgent`, `ReviewerAgent`, `DebuggerAgent`, `ResearchAgent`) that collaborate to solve complex problems faster than a single AI. |
+| 🧬 **Self-Evolving Prompts & Ghost Mode** | Tracks your corrections and edits. SHEN AI *learns* your style and preferences, meaning you never have to correct the same mistake twice. |
+| 🧪 **Isolated Sandbox Verification** | Execute code snippets in a safe, isolated runtime sandbox (`shen.testInSandbox`) before committing changes to files. |
 | 🌍 **Multi-Provider Support** | Plug and play with your favorite LLMs. Full support for **Anthropic (Claude)**, **OpenAI (GPT)**, **Google (Gemini)**, **Mistral**, **Groq**, **Azure**, and local models via **Ollama** or custom endpoints! |
 | 🎭 **Personality Engine** | Change your AI pair-programmer's personality on the fly. Choose from a strict Code Reviewer, a patient Mentor, a quick-and-dirty Hacker, or a concise Senior Dev. |
 | 🕸️ **Project Genome** | Maintains a living knowledge graph of your entire codebase, giving SHEN AI unmatched context over cross-file dependencies. |
+
+---
+
+## ⚡ Slash Commands & Quick Actions
+
+SHEN AI features an integrated command dispatcher. Simply type `/` into the chat input or click any quick-action chip:
+
+| Command | Specialist / System | Action |
+|:---|:---|:---|
+| `/review [file]` | **Reviewer Agent** | Performs a deep security, quality, performance, and maintainability audit on active or specified files. |
+| `/debug <issue>` | **Debugger Agent** | Analyzes error messages, inspects stack traces, and proposes root-cause fixes. |
+| `/architect <feature>` | **Architect Agent** | Designs module topology, file blueprints, and interface contracts for new capabilities. |
+| `/research <topic>` | **Research Agent** | Explores codebase structure, library usage, and relevant design patterns. |
+| `/swarm <task>` | **Swarm Orchestrator** | Decomposes complex tasks across parallel specialist sub-agents. |
+| `/health` | **Vital Monitor** | Runs real-time diagnostic checks on code health, complexity, and maintainability. |
+| `/clear` | **Session Manager** | Clears the current chat session history to start a fresh task. |
+| `/help` | **Documentation** | Displays the command guide and available specialist tools. |
 
 ---
 
@@ -37,7 +59,7 @@ With SHEN AI, you get an AI that actually **modifies, tests, and reads your code
 
 ### Installation
 
-1. Install SHEN AI from the **VS Code Marketplace** *(Coming soon!)*.
+1. Install SHEN AI from the **VS Code Marketplace** *(or build from source)*.
 2. Open the **SHEN AI** sidebar panel (click the sparkle icon in your Activity Bar).
 3. Follow the quick onboarding instructions to configure your preferred AI provider.
 
@@ -56,6 +78,7 @@ If you don't have an API key configured, SHEN AI will automatically prompt you t
 - **Plan vs Act:** Use the toggle at the top of the chat input to switch between `Act` mode (AI can modify your files) and `Plan` mode (AI will only read files and generate text plans).
 - **Change Personality:** Use the dropdown in the chat input to switch your AI's tone (e.g., Senior Dev, Mentor, Hacker) to fit your current task perfectly.
 - **Cancel a Task:** If SHEN AI is taking an action you want to stop, press the `Stop` (■) button near the input bar to instantly halt the agent loop.
+- **Run Sandbox Test:** Highlight code in any editor and run `SHEN AI: Test in Sandbox` to verify execution results safely.
 
 ---
 
@@ -67,8 +90,8 @@ Want to build or modify SHEN AI yourself? Here is how the magic happens:
 
 SHEN AI uses a **Swarm Architecture** with isolated React UI and Node.js Extension components.
 - The `webview` (React UI) communicates with the `extension` (Node.js backend) via VS Code's `postMessage` protocol.
-- The core loop is managed by `ChatManager`, which routes commands to the `ToolRegistry` and tracks tokens and history.
-- Context is strictly managed to ensure massive codebases don't exceed LLM token limits.
+- The core loop is managed by `ChatManager`, which routes commands to the `ToolRegistry`, validates changes with `CodeValidator`, and tracks tokens and history.
+- Context is strictly managed with `ConversationSummarizer` and `ContextManager` to ensure massive codebases don't exceed LLM token limits.
 
 ### Local Development
 
@@ -79,6 +102,14 @@ SHEN AI uses a **Swarm Architecture** with isolated React UI and Node.js Extensi
 2. Run `npm install` to download dependencies.
 3. Run `npm run watch` (or `node esbuild.js --watch`) to compile the extension.
 4. Press `F5` in VS Code to launch the Extension Development Host.
+
+### Running Tests & Linting
+
+```bash
+npm run lint    # Run ESLint across TypeScript and React sources
+npm test        # Run Jest test suites
+npm run build   # Production build of extension and webview
+```
 
 ### Releasing to GitHub and the Marketplace
 
@@ -97,10 +128,5 @@ If you modify SHEN AI locally and want to publish your version:
 ---
 
 <div align="center">
-  <b>Licensed under GPL-3.0-or-later.
-
----
-
-<div align="center">
-  <b>Built with ❤️ by Shenal D (<a href="https://github.com/shenald-dev">@shenald-dev</a>) and advanced AI engineering.</b>
+  <b>Licensed under GPL-3.0-or-later.</b>
 </div>

@@ -87,6 +87,10 @@ export class OrchestratorAgent extends EventEmitter {
         agent.on("taskFailed", (data) => this.emit("agentTaskFailed", data));
     }
 
+    public getAvailableRoles(): AgentRole[] {
+        return Array.from(this.agents.keys());
+    }
+
     /**
      * Main entry point: orchestrate a complex task by delegating to specialists.
      */
@@ -160,6 +164,8 @@ export class OrchestratorAgent extends EventEmitter {
         const availableRoles = Array.from(this.agents.keys());
 
         const planningPrompt = `You are an orchestration planner for an AI coding assistant system. Analyze this user request and create a delegation plan that assigns subtasks to specialist agents.
+
+Active specialist agent roles: ${availableRoles.join(", ")}
 
 Available specialist agents:
 - **architect**: System design, planning, architecture, implementation plans
@@ -370,7 +376,7 @@ Provide a clear, organized summary that combines all findings.`;
             ]);
 
             return response.content;
-        } catch (error) {
+        } catch {
             // Fallback: concatenate results
             return results.map((r, i) => `## Agent ${i + 1}\n${r.content}`).join("\n\n");
         }

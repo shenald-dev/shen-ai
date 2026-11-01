@@ -7,6 +7,8 @@ import { exec } from "child_process";
 import * as util from "util";
 import { registerGitTools } from "./git-tools";
 import { UndoManager } from "./undo-manager";
+import type { CodeValidator } from "./code-validator";
+import type { BlastRadiusAnalyzer } from "../genome/blast-radius-analyzer";
 
 // ============================================================
 // SHEN AI — Tool Registry
@@ -17,12 +19,28 @@ type ToolHandler = (args: Record<string, unknown>) => Promise<string>;
 export class ToolRegistry {
     private tools: Map<string, { definition: ToolDefinition; handler: ToolHandler }>;
     private context: vscode.ExtensionContext;
+    private codeValidator?: CodeValidator;
+    private blastRadiusAnalyzer?: BlastRadiusAnalyzer;
 
-    constructor(context: vscode.ExtensionContext) {
+    constructor(
+        context: vscode.ExtensionContext,
+        codeValidator?: CodeValidator,
+        blastRadiusAnalyzer?: BlastRadiusAnalyzer
+    ) {
         this.context = context;
+        this.codeValidator = codeValidator;
+        this.blastRadiusAnalyzer = blastRadiusAnalyzer;
         this.tools = new Map();
         this.registerBuiltinTools();
         registerGitTools(this);
+    }
+
+    public setCodeValidator(validator: CodeValidator): void {
+        this.codeValidator = validator;
+    }
+
+    public setBlastRadiusAnalyzer(analyzer: BlastRadiusAnalyzer): void {
+        this.blastRadiusAnalyzer = analyzer;
     }
 
     private registerBuiltinTools(): void {
@@ -113,13 +131,35 @@ export class ToolRegistry {
             const fullPath = path.join(workspaceRoot, filePath);
 
             try {
+                // Pre-flight syntax and structural validation
+                if (this.codeValidator) {
+                    const validation = this.codeValidator.validateCode(content, filePath);
+                    if (!validation.isValid) {
+                        const errorDetails = validation.issues
+                            .filter((i) => i.severity === "error")
+                            .map((i) => `Line ${i.line}: ${i.message}`)
+                            .join("; ");
+                        return `Code validation failed for ${filePath}: ${errorDetails}. Please fix these syntax issues before applying.`;
+                    }
+                }
+
                 // Take a snapshot before editing
                 await UndoManager.getInstance().snapshotFile(fullPath);
 
                 const dir = path.dirname(fullPath);
                 await fs.promises.mkdir(dir, { recursive: true });
                 await fs.promises.writeFile(fullPath, content, "utf-8");
-                return `Successfully wrote ${content.split("\n").length} lines to ${filePath}`;
+
+                let blastNotice = "";
+                if (this.blastRadiusAnalyzer) {
+                    this.blastRadiusAnalyzer.analyzeFile(filePath);
+                    const blast = this.blastRadiusAnalyzer.getBlastRadius(filePath);
+                    if (blast && blast.totalDependents > 0) {
+                        blastNotice = ` (⚠️ Blast radius: ${blast.totalDependents} dependent file(s), risk: ${blast.riskLevel})`;
+                    }
+                }
+
+                return `Successfully wrote ${content.split("\n").length} lines to ${filePath}${blastNotice}`;
             } catch (error) {
                 return `Error writing file: ${(error as Error).message}`;
             }
@@ -318,8 +358,31 @@ export class ToolRegistry {
                     return `Failed to apply changes. ${replacements}/${blocks.length} blocks matched, but some failed. NO changes were written to the file (all-or-nothing safety).\nErrors:\n${errors.map((e) => `  - ${e}`).join("\n")}`;
                 }
 
+                // Validate resulting file content before saving
+                if (this.codeValidator) {
+                    const validation = this.codeValidator.validateCode(fileContent, filePath);
+                    if (!validation.isValid) {
+                        const errorDetails = validation.issues
+                            .filter((i) => i.severity === "error")
+                            .map((i) => `Line ${i.line}: ${i.message}`)
+                            .join("; ");
+                        return `Code validation failed after applying replace_in_file to ${filePath}: ${errorDetails}. No changes were written to disk.`;
+                    }
+                }
+
+                await UndoManager.getInstance().snapshotFile(fullPath);
                 await fs.promises.writeFile(fullPath, fileContent, "utf-8");
-                return `Successfully applied ${replacements} replacement(s) to ${filePath}`;
+
+                let blastNotice = "";
+                if (this.blastRadiusAnalyzer) {
+                    this.blastRadiusAnalyzer.analyzeFile(filePath);
+                    const blast = this.blastRadiusAnalyzer.getBlastRadius(filePath);
+                    if (blast && blast.totalDependents > 0) {
+                        blastNotice = ` (⚠️ Blast radius: ${blast.totalDependents} dependent file(s), risk: ${blast.riskLevel})`;
+                    }
+                }
+
+                return `Successfully applied ${replacements} replacement(s) to ${filePath}${blastNotice}`;
             } catch (error) {
                 return `Error in replace_in_file: ${(error as Error).message}`;
             }
@@ -412,8 +475,30 @@ export class ToolRegistry {
                     return `Error applying diff: ${result.error}`;
                 }
 
+                if (this.codeValidator) {
+                    const validation = this.codeValidator.validateCode(result.content, filePath);
+                    if (!validation.isValid) {
+                        const errorDetails = validation.issues
+                            .filter((i) => i.severity === "error")
+                            .map((i) => `Line ${i.line}: ${i.message}`)
+                            .join("; ");
+                        return `Code validation failed for patched content in ${filePath}: ${errorDetails}. Diff was not applied.`;
+                    }
+                }
+
+                await UndoManager.getInstance().snapshotFile(fullPath);
                 await fs.promises.writeFile(fullPath, result.content, "utf-8");
-                return `Successfully applied diff to ${filePath} (${result.added} additions, ${result.removed} removals)`;
+
+                let blastNotice = "";
+                if (this.blastRadiusAnalyzer) {
+                    this.blastRadiusAnalyzer.analyzeFile(filePath);
+                    const blast = this.blastRadiusAnalyzer.getBlastRadius(filePath);
+                    if (blast && blast.totalDependents > 0) {
+                        blastNotice = ` (⚠️ Blast radius: ${blast.totalDependents} dependent file(s), risk: ${blast.riskLevel})`;
+                    }
+                }
+
+                return `Successfully applied diff to ${filePath} (${result.added} additions, ${result.removed} removals)${blastNotice}`;
             } catch (error) {
                 return `Error in apply_diff: ${(error as Error).message}`;
             }

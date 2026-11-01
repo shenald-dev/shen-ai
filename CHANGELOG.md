@@ -5,19 +5,25 @@ All notable changes to the "SHEN AI" extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Fixed
-- **[Fixed]:** Fixed an infinite loop / deadlock bug in `SwarmOrchestrator` when encountering circular or missing task dependencies.
-- **Git Operations:** Migrated `GitTools` and `CheckpointManager` command execution to array-based `cross-spawn` processes, eliminating shell argument concatenation and shell injection risks.
-- **Diff Parsing:** Fixed diff line addition and deletion counts in `GitTools` to avoid matching `+++` and `---` file header lines.
-- **Plugin Loader:** Added promise settlement guards to prevent duplicate rejections when child processes emit error and close events or exceed buffer limits.
-- **Cross-Platform Tests:** Updated plugin loader test commands to cross-platform Node invocations for reliable execution on Windows, Linux, and macOS.
+## [1.0.0] - 2026-11-01
 
 ### Added
-- **Test Suite:** Added comprehensive unit test coverage for `GitTools` covering status summaries, branch actions, commit formatting, diff parsing, and process failure handling.
+- **Multi-Agent Specialist Routing:** Integrated direct dispatching from `ChatManager` to specialized role agents (`ReviewerAgent`, `DebuggerAgent`, `ArchitectAgent`, `ResearchAgent`) alongside `SwarmOrchestrator` and `VitalMonitor`.
+- **Slash Command Engine:** Built-in slash command dispatcher supporting `/review`, `/debug`, `/architect`, `/research`, `/swarm`, `/health`, `/clear`, and `/help`.
+- **Interactive Command UX & Quick Actions:** Added autocomplete popover on `/` typing with full keyboard navigation (`ArrowUp`, `ArrowDown`, `Tab`, `Enter`, `Escape`), active file indicators, and quick action chips in the webview interface.
+- **Pre-Flight Code Validation Shield:** Integrated `CodeValidator` into `ToolRegistry` to parse and validate syntax for TypeScript, JavaScript, and JSON before writing changes to disk (`write_to_file`, `replace_in_file`, `apply_diff`), preventing file corruption from unclosed brackets or invalid syntax.
+- **Blast Radius Warning System:** Integrated `BlastRadiusAnalyzer` into tool execution to compute real-time dependency impact and append warning notices on modifications to high-risk modules.
+- **Dynamic Context Auto-Compression:** Added `replaceWithSummary` to `ConversationHistory` to compress older turns with executive summaries while retaining recent turns to prevent context window overflow.
+- **Sandbox Code Verification Command:** Added `shen.testInSandbox` command to run highlighted code selections in an isolated sandbox environment.
+- **Comprehensive Test Coverage:** Added unit test suites for conversation history summarization and tool registry pre-flight validation.
 
-## [1.0.0] - 2026-05-02
+### Fixed
+- **Deadlock Resolution:** Fixed task dependency deadlock bug in `SwarmOrchestrator` when encountering circular or missing task dependencies.
+- **Process Spawning Security:** Migrated `GitTools` and `CheckpointManager` command execution to array-based `cross-spawn` execution, eliminating shell injection vulnerabilities.
+- **Diff Parsing Accuracy:** Fixed diff line addition and deletion counts in `GitTools` to avoid matching `+++` and `---` file header lines.
+- **Plugin Loader Settlement:** Added promise settlement guards to prevent duplicate rejections when child processes emit error and close events or exceed buffer limits.
+
+## [0.1.0] - 2026-05-02
 
 ### Added
 - **Initial Release:** Welcome to SHEN AI!

@@ -2,7 +2,7 @@
   "name": "shen-ai",
   "displayName": "SHEN AI - Coding Agent",
   "description": "A superior multi-agent, multi-provider AI coding assistant with predictive intent, self-evolving prompts, and autonomous feature building.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "publisher": "shen-ai",
   "icon": "assets/icon.png",
   "repository": {

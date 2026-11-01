@@ -28,6 +28,21 @@ export class CodeValidator {
         const syntaxIssues = this.checkCommonSyntaxErrors(lines);
         issues.push(...syntaxIssues);
 
+        // Check JSON syntax
+        if (filePath.endsWith(".json")) {
+            try {
+                JSON.parse(content);
+            } catch (error: any) {
+                issues.push({
+                    line: 1,
+                    column: 1,
+                    severity: "error",
+                    message: `Invalid JSON: ${error.message}`,
+                    rule: "json-syntax-error"
+                });
+            }
+        }
+
         // Try to parse as JavaScript/TypeScript
         if (filePath.endsWith(".js") || filePath.endsWith(".jsx") || filePath.endsWith(".ts") || filePath.endsWith(".tsx")) {
             const parseIssues = this.checkJavaScriptSyntax(content);
@@ -250,8 +265,10 @@ export class CodeValidator {
         const issues: ValidationIssue[] = [];
 
         try {
-            // Remove TypeScript-specific syntax for basic validation
+            // Remove TypeScript-specific syntax and module keywords for basic validation
             const jsContent = content
+                .replace(/^\s*export\s+(default\s+)?/gm, "")
+                .replace(/^\s*import\s+.*?(from\s+['"][^'"]+['"]|['"][^'"]+['"]);?/gm, "")
                 .replace(/:\s*\w+(\[\])?(\s*[,)])?/g, "$2") // Remove type annotations
                 .replace(/<[^>]+>/g, "") // Remove generic types
                 .replace(/\binterface\s+\w+\s*{[^}]*}/g, "") // Remove interfaces
