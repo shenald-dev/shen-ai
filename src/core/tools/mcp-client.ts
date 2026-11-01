@@ -1,3 +1,4 @@
+import spawn from "cross-spawn";
 import { EventEmitter } from "events";
 import { logger } from "../../utils/logger";
 import { generateId } from "../../utils/helpers";
@@ -374,7 +375,6 @@ class MCPConnection extends EventEmitter {
             throw new Error("MCP stdio transport requires a 'command' configuration.");
         }
 
-        const { spawn } = await import("child_process");
 
         const env = {
             ...process.env,
@@ -402,7 +402,7 @@ class MCPConnection extends EventEmitter {
             this.emit("error", error);
         });
 
-        this.process.on("exit", (code: number | null) => {
+        this.process.on("close", (code: number | null) => {
             this._isConnected = false;
             logger.info(`MCP [${this.config.name}] process exited with code ${code}`);
             this.emit("disconnected");
