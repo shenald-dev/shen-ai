@@ -3,7 +3,7 @@ import type { ToolDefinition, ToolCall, ToolResult } from "../../types";
 import { logger } from "../../utils/logger";
 import * as fs from "fs";
 import * as path from "path";
-import { exec } from "child_process";
+import spawn from "cross-spawn";
 import * as util from "util";
 import { registerGitTools } from "./git-tools";
 import { UndoManager } from "./undo-manager";
@@ -230,24 +230,60 @@ export class ToolRegistry {
             }
 
             try {
-                const execPromise = util.promisify(exec);
+                return await new Promise((resolve, reject) => {
+                    const child = spawn(command, [], {
+                        cwd: workspaceRoot,
+                        timeout: 30000,
+                        shell: true,
+                    });
 
-                const { stdout, stderr } = await execPromise(command, {
-                    cwd: workspaceRoot,
-                    timeout: 30000,
-                    maxBuffer: 1024 * 1024,
+                    let stdout = "";
+                    let stderr = "";
+                    let stdoutLen = 0;
+                    let stderrLen = 0;
+                    const maxBuffer = 1024 * 1024;
+
+                    child.stdout?.on("data", (data: Buffer) => {
+                        stdoutLen += data.length;
+                        if (stdoutLen > maxBuffer) {
+                            child.kill();
+                            reject(new Error("maxBuffer exceeded"));
+                        } else {
+                            stdout += data.toString();
+                        }
+                    });
+
+                    child.stderr?.on("data", (data: Buffer) => {
+                        stderrLen += data.length;
+                        if (stderrLen > maxBuffer) {
+                            child.kill();
+                            reject(new Error("maxBuffer exceeded"));
+                        } else {
+                            stderr += data.toString();
+                        }
+                    });
+
+                    child.on("error", (error: Error) => {
+                        reject(error);
+                    });
+
+                    child.on("close", (code: number | null) => {
+                        if (code !== 0) {
+                            let result = `Command failed with exit code ${code}`;
+                            if (stdout) result += "\n" + stdout;
+                            if (stderr) result += "\n" + stderr;
+                            resolve(result);
+                        } else {
+                            let result = "";
+                            if (stdout) result += stdout;
+                            if (stderr) result += (result ? "\n" : "") + "STDERR:\n" + stderr;
+                            resolve(result || "(command completed with no output)");
+                        }
+                    });
                 });
-
-                let result = "";
-                if (stdout) result += stdout;
-                if (stderr) result += (result ? "\n" : "") + "STDERR:\n" + stderr;
-                return result || "(command completed with no output)";
             } catch (error) {
-                const err = error as { stdout?: string; stderr?: string; message: string };
-                let result = `Command failed: ${err.message}`;
-                if (err.stdout) result += "\n" + err.stdout;
-                if (err.stderr) result += "\n" + err.stderr;
-                return result;
+                const err = error as Error;
+                return `Command failed: ${err.message}`;
             }
         });
 

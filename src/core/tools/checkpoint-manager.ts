@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as cp from "child_process";
+import spawn from "cross-spawn";
 import * as vscode from "vscode";
 import { EventEmitter } from "events";
 import { logger } from "../../utils/logger";
@@ -501,31 +501,63 @@ export class CheckpointManager extends EventEmitter {
 
     // --- Private Methods ---
 
+    private async spawnGit(args: string[], cwd: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const child = spawn("git", args, { cwd });
+            let stdout = "";
+            let stderr = "";
+            const maxBuffer = 10 * 1024 * 1024;
+
+            child.stdout?.on("data", (data: Buffer) => {
+                stdout += data.toString();
+                if (stdout.length > maxBuffer) {
+                    child.kill();
+                    reject(new Error("maxBuffer exceeded"));
+                }
+            });
+
+            child.stderr?.on("data", (data: Buffer) => {
+                stderr += data.toString();
+                if (stderr.length > maxBuffer) {
+                    child.kill();
+                    reject(new Error("maxBuffer exceeded"));
+                }
+            });
+
+            child.on("error", (err: Error) => {
+                reject(err);
+            });
+
+            child.on("close", (code: number | null) => {
+                if (code !== 0) {
+                    reject(new Error(`Git command failed with exit code ${code}\nStderr: ${stderr}`));
+                } else {
+                    resolve(stdout);
+                }
+            });
+        });
+    }
+
     private async createGitCommit(message: string): Promise<string | undefined> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) return undefined;
 
         const cwd = workspaceFolders[0].uri.fsPath;
-        const util = await import("util");
-        const execPromise = util.promisify(cp.exec);
 
         try {
             // Check git status first
-            const statusResult = await execPromise("git status --porcelain", { cwd });
-            if (!statusResult.stdout.trim()) {
+            const statusResult = await this.spawnGit(["status", "--porcelain"], cwd);
+            if (!statusResult.trim()) {
                 return undefined; // Nothing to commit
             }
 
             // Stage and commit
-            await execPromise("git add .", { cwd });
-            const commitResult = await execPromise(
-                `git commit -m "🤖 SHEN: ${message.replace(/"/g, '\\"')}"`,
-                { cwd }
-            );
+            await this.spawnGit(["add", "."], cwd);
+            await this.spawnGit(["commit", "-m", `🤖 SHEN: ${message}`], cwd);
 
             // Get the commit hash
-            const hashResult = await execPromise("git rev-parse HEAD", { cwd });
-            return hashResult.stdout.trim();
+            const hashResult = await this.spawnGit(["rev-parse", "HEAD"], cwd);
+            return hashResult.trim();
         } catch (e) {
             // Git might not be initialized or there might be nothing to commit
             return undefined;
@@ -539,10 +571,8 @@ export class CheckpointManager extends EventEmitter {
         }
 
         const cwd = workspaceFolders[0].uri.fsPath;
-        const util = await import("util");
-        const execPromise = util.promisify(cp.exec);
 
-        await execPromise(`git reset --hard ${commitHash}`, { cwd });
+        await this.spawnGit(["reset", "--hard", commitHash], cwd);
     }
 
     private enforceTaskLimit(): void {

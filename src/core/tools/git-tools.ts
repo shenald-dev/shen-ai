@@ -1,10 +1,8 @@
 import * as vscode from "vscode";
-import { exec } from "child_process";
-import { promisify } from "util";
+import spawn from "cross-spawn";
 import { logger } from "../../utils/logger";
 import { getWorkspaceRoot } from "../../utils/helpers";
 
-const execAsync = promisify(exec);
 
 // ============================================================
 // SHEN AI — Git Tools
@@ -64,19 +62,45 @@ export class GitTools {
             throw new Error("No workspace folder open.");
         }
 
-        try {
-            const { stdout, stderr } = await execAsync(`git ${args.join(" ")}`, {
-                cwd: dir,
-                maxBuffer: 10 * 1024 * 1024,
+        return new Promise((resolve, reject) => {
+            const child = spawn("git", args, { cwd: dir });
+
+            let stdout = "";
+            let stderr = "";
+            const maxBuffer = 10 * 1024 * 1024;
+
+            child.stdout?.on("data", (data: Buffer) => {
+                stdout += data.toString();
+                if (stdout.length > maxBuffer) {
+                    child.kill();
+                    reject(new Error("maxBuffer exceeded"));
+                }
             });
-            return stdout.trim();
-        } catch (error) {
-            const err = error as { stdout?: string; stderr?: string; message: string };
-            if (err.stderr && !err.stderr.includes("warning")) {
-                throw new Error(`Git error: ${err.stderr.trim()}`);
-            }
-            return err.stdout || "";
-        }
+
+            child.stderr?.on("data", (data: Buffer) => {
+                stderr += data.toString();
+                if (stderr.length > maxBuffer) {
+                    child.kill();
+                    reject(new Error("maxBuffer exceeded"));
+                }
+            });
+
+            child.on("error", (err: Error) => {
+                reject(err);
+            });
+
+            child.on("close", (code: number | null) => {
+                if (code !== 0) {
+                    if (stderr && !stderr.includes("warning")) {
+                        reject(new Error(`Git error: ${stderr.trim()}`));
+                    } else {
+                        resolve(stdout.trim());
+                    }
+                } else {
+                    resolve(stdout.trim());
+                }
+            });
+        });
     }
 
     /**

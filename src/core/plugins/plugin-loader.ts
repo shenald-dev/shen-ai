@@ -537,6 +537,26 @@ export class PluginLoader extends EventEmitter {
             await new Promise<void>((resolve, reject) => {
                 const child = spawn("npm", ["install", source], { cwd: targetDir });
 
+                let stdoutLen = 0;
+                let stderrLen = 0;
+                const maxBuffer = 10 * 1024 * 1024;
+
+                child.stdout?.on("data", (data: Buffer) => {
+                    stdoutLen += data.length;
+                    if (stdoutLen > maxBuffer) {
+                        child.kill();
+                        reject(new Error("maxBuffer exceeded"));
+                    }
+                });
+
+                child.stderr?.on("data", (data: Buffer) => {
+                    stderrLen += data.length;
+                    if (stderrLen > maxBuffer) {
+                        child.kill();
+                        reject(new Error("maxBuffer exceeded"));
+                    }
+                });
+
                 child.on("error", (error) => reject(error));
                 child.on("close", (code) => {
                     if (code === 0) {
