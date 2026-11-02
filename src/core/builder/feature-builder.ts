@@ -442,6 +442,17 @@ Respond with ONLY the file content (no markdown code blocks).`;
                     const result = await new Promise<{stdout: string, stderr: string}>((resolve, reject) => {
                         let stdout = "";
                         let stderr = "";
+                        let stdoutLen = 0;
+                        let stderrLen = 0;
+                        const maxBuffer = 1024 * 1024;
+                        let settled = false;
+
+                        const settle = (error: Error | null, result?: {stdout: string, stderr: string}) => {
+                            if (settled) return;
+                            settled = true;
+                            if (error) reject(error);
+                            else resolve(result!);
+                        };
 
                         const child = spawn(cmd, cmdArgs, {
                             cwd: workspaceRoot,
@@ -449,27 +460,31 @@ Respond with ONLY the file content (no markdown code blocks).`;
                         });
 
                         child.stdout?.on('data', (data: Buffer) => {
-                            stdout += data.toString();
-                            if (stdout.length > 1024 * 1024) {
+                            stdoutLen += data.length;
+                            if (stdoutLen > maxBuffer) {
                                 child.kill();
-                                reject(new Error("maxBuffer exceeded"));
+                                settle(new Error("maxBuffer exceeded"));
+                                return;
                             }
+                            stdout += data.toString();
                         });
 
                         child.stderr?.on('data', (data: Buffer) => {
-                            stderr += data.toString();
-                            if (stderr.length > 1024 * 1024) {
+                            stderrLen += data.length;
+                            if (stderrLen > maxBuffer) {
                                 child.kill();
-                                reject(new Error("maxBuffer exceeded"));
+                                settle(new Error("maxBuffer exceeded"));
+                                return;
                             }
+                            stderr += data.toString();
                         });
 
-                        child.on('error', (err: Error) => reject(err));
+                        child.on('error', (err: Error) => settle(err));
                         child.on('close', (code: number | null) => {
                             if (code !== 0) {
-                                reject(new Error(`Command failed with exit code ${code}\nStderr: ${stderr}`));
+                                settle(new Error(`Command failed with exit code ${code}\nStderr: ${stderr}`));
                             } else {
-                                resolve({ stdout, stderr });
+                                settle(null, { stdout, stderr });
                             }
                         });
                     });
@@ -510,6 +525,17 @@ Respond with ONLY the file content (no markdown code blocks).`;
                     const result = await new Promise<{stdout: string, stderr: string}>((resolve, reject) => {
                         let stdout = "";
                         let stderr = "";
+                        let stdoutLen = 0;
+                        let stderrLen = 0;
+                        const maxBuffer = 1024 * 1024;
+                        let settled = false;
+
+                        const settle = (error: Error | null, result?: {stdout: string, stderr: string}) => {
+                            if (settled) return;
+                            settled = true;
+                            if (error) reject(error);
+                            else resolve(result!);
+                        };
 
                         const child = spawn(cmd, cmdArgs, {
                             cwd: workspaceRoot,
@@ -517,27 +543,31 @@ Respond with ONLY the file content (no markdown code blocks).`;
                         });
 
                         child.stdout?.on('data', (data: Buffer) => {
-                            stdout += data.toString();
-                            if (stdout.length > 1024 * 1024) {
+                            stdoutLen += data.length;
+                            if (stdoutLen > maxBuffer) {
                                 child.kill();
-                                reject(new Error("maxBuffer exceeded"));
+                                settle(new Error("maxBuffer exceeded"));
+                                return;
                             }
+                            stdout += data.toString();
                         });
 
                         child.stderr?.on('data', (data: Buffer) => {
-                            stderr += data.toString();
-                            if (stderr.length > 1024 * 1024) {
+                            stderrLen += data.length;
+                            if (stderrLen > maxBuffer) {
                                 child.kill();
-                                reject(new Error("maxBuffer exceeded"));
+                                settle(new Error("maxBuffer exceeded"));
+                                return;
                             }
+                            stderr += data.toString();
                         });
 
-                        child.on('error', (err: Error) => reject(err));
+                        child.on('error', (err: Error) => settle(err));
                         child.on('close', (code: number | null) => {
                             if (code !== 0) {
-                                reject(new Error(`Command failed with exit code ${code}\nStderr: ${stderr}`));
+                                settle(new Error(`Command failed with exit code ${code}\nStderr: ${stderr}`));
                             } else {
-                                resolve({ stdout, stderr });
+                                settle(null, { stdout, stderr });
                             }
                         });
                     });

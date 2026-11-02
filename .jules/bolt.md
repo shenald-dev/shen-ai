@@ -36,3 +36,7 @@
 ## 2026-11-01 - Security & Reliability: Prevent Command Injection and Resource Exhaustion
 - **Learning:** Direct use of `child_process.exec` is vulnerable to command injection and can cause unexpected hangs if processes produce large outputs without bounds. Using string concatenation for command arguments opens up injection vectors.
 - **Action:** Migrated uses of `exec` to `cross-spawn`, enforcing safe arrays for argument parsing. Used `shell-quote` specifically to safely parse arbitrary tool commands and reject shell operators. Wrapped these calls with proper Promise handling that strictly checks the exit code on the `close` event and implements a strict `maxBuffer` to prevent memory exhaustion DoS vectors. Future process executions must avoid `exec` and properly bounds-check `spawn`.
+
+## 2026-11-02 - Reliability/Memory: Properly Bounds-check Spawn Output Streams
+- **Learning:** When manually bounds-checking `maxBuffer` on child process streams, checking string lengths after `toString()` allows silent memory accumulation if the promise rejects but processing continues. In addition, killing the child process triggers the `close` event, resulting in double Promise resolutions/rejections.
+- **Action:** Implemented a `settled` flag on all spawn Promise wrappers in `src/core/builder/feature-builder.ts` to prevent double resolution, calculated lengths accurately via `data.length`, and explicitly added early `return` statements to prevent further `stdout` and `stderr` appends when `maxBuffer` limits are breached.
