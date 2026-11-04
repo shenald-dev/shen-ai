@@ -40,3 +40,7 @@
 ## 2026-11-02 - Reliability/Memory: Properly Bounds-check Spawn Output Streams
 - **Learning:** When manually bounds-checking `maxBuffer` on child process streams, checking string lengths after `toString()` allows silent memory accumulation if the promise rejects but processing continues. In addition, killing the child process triggers the `close` event, resulting in double Promise resolutions/rejections.
 - **Action:** Implemented a `settled` flag on all spawn Promise wrappers in `src/core/builder/feature-builder.ts` to prevent double resolution, calculated lengths accurately via `data.length`, and explicitly added early `return` statements to prevent further `stdout` and `stderr` appends when `maxBuffer` limits are breached.
+
+## 2026-11-04 - Performance Optimization: Precompute Map to Avoid O(N^2) Lookups in Orchestrator
+- **Learning:** In `orchestrator-agent.ts`, resolving task dependencies inside a `for` loop used nested array iterators (`.find()` inside `.every()`), causing an O(N^2) bottleneck when checking dependencies against the entire plan's steps.
+- **Action:** Refactored the array search approach into a precomputed `Map` prior to the loop. This changes the O(N) `.find()` lookup to an O(1) `.get()` operation, reducing the overall algorithmic complexity to O(N).
