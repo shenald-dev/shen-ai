@@ -44,3 +44,7 @@
 ## 2026-11-04 - Performance Optimization: Precompute Map to Avoid O(N^2) Lookups in Orchestrator
 - **Learning:** In `orchestrator-agent.ts`, resolving task dependencies inside a `for` loop used nested array iterators (`.find()` inside `.every()`), causing an O(N^2) bottleneck when checking dependencies against the entire plan's steps.
 - **Action:** Refactored the array search approach into a precomputed `Map` prior to the loop. This changes the O(N) `.find()` lookup to an O(1) `.get()` operation, reducing the overall algorithmic complexity to O(N).
+
+## 2026-11-06 - Security & Reliability: Properly Bounds-check Spawn Output Streams
+- **Learning:** When executing child processes using `spawn` where standard I/O is consumed, failing to enforce memory bounds leaves the application vulnerable to DoS from infinite or excessively large outputs. Additionally, when streams are piped to event listeners, listening for `exit` instead of `close` can cause race conditions since `exit` triggers before stdio streams are fully flushed.
+- **Action:** Implemented a strict 10MB `maxBuffer` on `git` child processes in `checkpoint-manager.ts`, killing the child and returning an error if bounds are exceeded. Also updated `mcp-client.ts` to attach to the `close` event instead of `exit` to ensure all output is fully processed before the process is considered disconnected.

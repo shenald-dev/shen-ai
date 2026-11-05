@@ -514,8 +514,30 @@ export class CheckpointManager extends EventEmitter {
             const child = spawn("git", args, { cwd, timeout: 30000 });
             let stdout = "";
             let stderr = "";
-            child.stdout?.on("data", (data: Buffer) => { stdout += data.toString(); });
-            child.stderr?.on("data", (data: Buffer) => { stderr += data.toString(); });
+            let stdoutLen = 0;
+            let stderrLen = 0;
+            const maxBuffer = 10 * 1024 * 1024; // 10MB
+
+            child.stdout?.on("data", (data: Buffer) => {
+                stdoutLen += data.length;
+                if (stdoutLen > maxBuffer) {
+                    child.kill();
+                    settle(new Error("Git maxBuffer exceeded"));
+                    return;
+                }
+                stdout += data.toString();
+            });
+
+            child.stderr?.on("data", (data: Buffer) => {
+                stderrLen += data.length;
+                if (stderrLen > maxBuffer) {
+                    child.kill();
+                    settle(new Error("Git maxBuffer exceeded"));
+                    return;
+                }
+                stderr += data.toString();
+            });
+
             child.on("error", (err) => settle(err));
             child.on("close", (code) => {
                 if (code !== 0) {
