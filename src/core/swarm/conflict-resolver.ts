@@ -252,6 +252,7 @@ export class ConflictResolver {
         return winner.content;
     }
 
+
     private resolveByMerge(conflict: Conflict): string {
         // For line-based operations, merge non-overlapping changes
         const sorted = [...conflict.operations].sort((a, b) => (a.lineStart || 0) - (b.lineStart || 0));
@@ -259,6 +260,15 @@ export class ConflictResolver {
         if (sorted.every((op) => op.lineStart !== undefined && op.lineEnd !== undefined)) {
             // Build merged content from non-overlapping regions
             const regions: Array<{ start: number; end: number; content: string; agentId: string }> = [];
+
+            // Precompute latest timestamp per agent to avoid O(N^2) lookups
+            const agentLatestTimestamps = new Map<string, number>();
+            for (const op of sorted) {
+                const current = agentLatestTimestamps.get(op.agentId) || 0;
+                if (op.timestamp > current) {
+                    agentLatestTimestamps.set(op.agentId, op.timestamp);
+                }
+            }
 
             for (const op of sorted) {
                 const overlaps = regions.some(
@@ -277,18 +287,21 @@ export class ConflictResolver {
                     const existingIdx = regions.findIndex(
                         (r) => (op.lineStart as number) <= r.end && (op.lineEnd as number) >= r.start
                     );
-                    if (existingIdx >= 0 && op.timestamp > sorted.find(
-                        (s) => s.agentId === regions[existingIdx].agentId
-                    )!.timestamp) {
-                        regions[existingIdx] = {
-                            start: op.lineStart as number,
-                            end: op.lineEnd as number,
-                            content: op.content,
-                            agentId: op.agentId,
-                        };
+                    if (existingIdx >= 0) {
+                        const existingAgentId = regions[existingIdx].agentId;
+                        const existingAgentTimestamp = agentLatestTimestamps.get(existingAgentId) || 0;
+                        if (op.timestamp > existingAgentTimestamp) {
+                            regions[existingIdx] = {
+                                start: op.lineStart as number,
+                                end: op.lineEnd as number,
+                                content: op.content,
+                                agentId: op.agentId,
+                            };
+                        }
                     }
                 }
             }
+
 
             const merged = regions.sort((a, b) => a.start - b.start).map((r) => r.content).join("\n");
             conflict.resolved = true;
