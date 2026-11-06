@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import pLimit from "p-limit";
 import { VectorStore, type VectorDocument, type SearchResult } from "./vector-store";
 import { EmbeddingGenerator, type EmbeddingConfig } from "./embedding-generator";
 import { logger } from "../../utils/logger";
@@ -350,10 +351,13 @@ export class RAGEngine {
 
     private async collectFiles(dir: string): Promise<string[]> {
         const files: string[] = [];
+        const limit = pLimit(10); // Bound concurrency for I/O operations
 
         async function walk(currentDir: string): Promise<void> {
             try {
-                const items = await fs.promises.readdir(currentDir, { withFileTypes: true });
+                const items = await limit(() => fs.promises.readdir(currentDir, { withFileTypes: true }));
+                const dirPromises: Promise<void>[] = [];
+
                 for (const item of items) {
                     if (item.name.startsWith(".")) continue;
                     if (DEFAULT_CONFIG.excludePatterns.some((p) => item.name.includes(p))) continue;
@@ -361,7 +365,7 @@ export class RAGEngine {
                     const fullPath = path.join(currentDir, item.name);
 
                     if (item.isDirectory()) {
-                        await walk(fullPath);
+                        dirPromises.push(walk(fullPath));
                     } else {
                         const ext = path.extname(item.name);
                         if (DEFAULT_CONFIG.fileExtensions.includes(ext)) {
@@ -369,8 +373,10 @@ export class RAGEngine {
                         }
                     }
                 }
-            } catch {
-                // Skip inaccessible directories
+
+                await Promise.all(dirPromises);
+            } catch (err) {
+                logger.warn(`Failed to access directory ${currentDir}:`, err);
             }
         }
 
