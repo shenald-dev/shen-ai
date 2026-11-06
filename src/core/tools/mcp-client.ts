@@ -1,6 +1,5 @@
 import { EventEmitter } from "events";
 import { logger } from "../../utils/logger";
-import { generateId } from "../../utils/helpers";
 import type { ToolDefinition, ToolCall, ToolResult } from "../../types";
 
 // ============================================================
@@ -92,7 +91,7 @@ export class MCPClient extends EventEmitter {
     async connectAll(): Promise<void> {
         const promises: Promise<void>[] = [];
 
-        for (const [name, config] of this.servers) {
+        for (const [name, _config] of this.servers) {
             if (!config.enabled) {
                 logger.info(`MCP server ${name} is disabled, skipping.`);
                 continue;
@@ -146,7 +145,7 @@ export class MCPClient extends EventEmitter {
             this.emit("serverConnected", { name, tools: serverTools.length, resources: serverResources.length });
             logger.info(`MCP connected to ${name}: ${serverTools.length} tools, ${serverResources.length} resources`);
 
-        } catch (error) {
+        } catch (_error) {
             const errorMsg = (error as Error).message;
             logger.error(`MCP failed to connect to ${name}:`, error);
             this.emit("serverError", { name, error: errorMsg });
@@ -231,7 +230,7 @@ export class MCPClient extends EventEmitter {
                 content: this.formatToolResult(result),
                 isError: false,
             };
-        } catch (error) {
+        } catch (_error) {
             return {
                 toolCallId: call.id,
                 name: call.name,
@@ -271,7 +270,7 @@ export class MCPClient extends EventEmitter {
     getServerStatuses(): MCPServerStatus[] {
         const statuses: MCPServerStatus[] = [];
 
-        for (const [name, config] of this.servers) {
+        for (const [name, _config] of this.servers) {
             const connection = this.connections.get(name);
             const toolCount = Array.from(this.tools.values()).filter((t) => t.serverName === name).length;
             const resourceCount = Array.from(this.resources.values()).filter((r) => r.serverName === name).length;
@@ -458,7 +457,7 @@ class MCPConnection extends EventEmitter {
             try {
                 const message = JSON.parse(line);
                 this.handleMessage(message);
-            } catch (error) {
+            } catch (_error) {
                 logger.warn(`MCP [${this.config.name}] failed to parse message: ${line}`);
             }
         }

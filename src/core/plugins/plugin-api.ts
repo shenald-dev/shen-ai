@@ -1,4 +1,4 @@
-import type { ToolDefinition, ToolCall, ToolResult } from "../../types";
+import type { ToolDefinition } from "../../types";
 import type { ChatManager } from "../chat/chat-manager";
 import type { ToolRegistry } from "../tools/tool-registry";
 import type { ProviderRegistry } from "../providers/provider-registry";

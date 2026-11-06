@@ -6,7 +6,6 @@ import { logger } from "../../utils/logger";
 import { generateId } from "../../utils/helpers";
 import * as fs from "fs";
 import * as path from "path";
-import * as vscode from "vscode";
 
 // ============================================================
 // SHEN AI — Autonomous Feature Builder
@@ -28,10 +27,10 @@ export interface FeatureStep {
     id: string;
     title: string;
     description: string;
-    type: "create_file" | "modify_file" | "run_command" | "test" | "validate";
+    type: "createfile" | "modify_file" | "run_command" | "test" | "validate";
     filePath?: string;
     command?: string;
-    status: "pending" | "in_progress" | "completed" | "failed" | "skipped";
+    status: "pending" | "inprogress" | "completed" | "failed" | "skipped";
     result?: string;
     error?: string;
     completedAt?: number;
@@ -138,7 +137,7 @@ export class FeatureBuilder extends EventEmitter {
                     break;
                 }
 
-                step.status = "in_progress";
+                step.status = "inprogress";
                 this.emit("stepStarted", { build, step });
 
                 try {
@@ -225,7 +224,7 @@ export class FeatureBuilder extends EventEmitter {
      * Get current build progress.
      */
     getProgress(build: FeatureBuild): BuildProgress {
-        const currentStep = build.plan.steps.find((s) => s.status === "in_progress");
+        const currentStep = build.plan.steps.find((s) => s.status === "inprogress");
         return {
             featureId: build.id,
             status: build.status,
@@ -251,7 +250,7 @@ export class FeatureBuilder extends EventEmitter {
      * Use AI to create a detailed feature plan.
      */
     private async createPlan(userRequest: string, buildId: string): Promise<FeaturePlan> {
-        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
         const projectContext = this.getProjectContext();
 
         const prompt = `You are an autonomous feature builder. Plan how to implement this feature:
@@ -262,9 +261,9 @@ Project context:
 ${projectContext}
 
 Create a detailed, step-by-step implementation plan. Each step should be a concrete action:
-- create_file: Create a new file with complete content
-- modify_file: Modify an existing file
-- run_command: Execute a shell command (install deps, run migrations, etc.)
+- createfile: Create a new file with complete content
+- modifyfile: Modify an existing file
+- runcommand: Execute a shell command (install deps, run migrations, etc.)
 - test: Run tests to verify the implementation
 - validate: Validate the feature works correctly
 
@@ -285,7 +284,7 @@ Respond with ONLY valid JSON:
     {
       "title": "Step title",
       "description": "What to do",
-      "type": "create_file",
+      "type": "createfile",
       "filePath": "src/path/to/file.ts"
     }
   ]
@@ -310,16 +309,16 @@ Respond with ONLY valid JSON:
             const parsed = JSON.parse(jsonStr.trim());
 
             return {
-                id: `plan_${buildId}`,
+                id: `plan${buildId}`,
                 title: parsed.title || "Untitled Feature",
                 description: parsed.description || "",
                 estimatedComplexity: parsed.estimatedComplexity || "medium",
                 estimatedFiles: parsed.estimatedFiles || [],
                 steps: (parsed.steps || []).map((s: Record<string, unknown>, i: number) => ({
-                    id: `step_${i}`,
+                    id: `step${i}`,
                     title: String(s.title || `Step ${i + 1}`),
                     description: String(s.description || ""),
-                    type: (s.type as FeatureStep["type"]) || "create_file",
+                    type: (s.type as FeatureStep["type"]) || "createfile",
                     filePath: s.filePath as string | undefined,
                     command: s.command as string | undefined,
                     status: "pending" as const,
@@ -330,16 +329,16 @@ Respond with ONLY valid JSON:
             logger.error("Failed to create feature plan:", error);
             // Fallback plan
             return {
-                id: `plan_${buildId}`,
+                id: `plan${buildId}`,
                 title: userRequest.substring(0, 50),
                 description: userRequest,
                 estimatedComplexity: "medium",
                 estimatedFiles: [],
                 steps: [{
-                    id: "step_0",
+                    id: "step0",
                     title: "Implement feature",
                     description: userRequest,
-                    type: "create_file",
+                    type: "createfile",
                     status: "pending",
                 }],
                 createdAt: Date.now(),
@@ -351,14 +350,14 @@ Respond with ONLY valid JSON:
      * Execute a single build step.
      */
     private async executeStep(step: FeatureStep, build: FeatureBuild): Promise<void> {
-        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
         if (!workspaceRoot) {
             throw new Error("No workspace folder open.");
         }
 
         switch (step.type) {
-            case "create_file":
-            case "modify_file": {
+            case "createfile":
+            case "modifyfile": {
                 if (!step.filePath) {
                     throw new Error(`Step "${step.title}" requires a filePath`);
                 }
@@ -404,7 +403,7 @@ Respond with ONLY the file content (no markdown code blocks).`;
 
                 step.result = `Created/modified ${step.filePath} (${content.split("\n").length} lines)`;
 
-                if (step.type === "create_file") {
+                if (step.type === "createfile") {
                     build.filesCreated.push(step.filePath);
                 } else {
                     build.filesModified.push(step.filePath);
@@ -412,7 +411,7 @@ Respond with ONLY the file content (no markdown code blocks).`;
                 break;
             }
 
-            case "run_command": {
+            case "runcommand": {
                 if (!step.command) {
                     throw new Error(`Step "${step.title}" requires a command`);
                 }
@@ -650,7 +649,7 @@ Provide a fix that can be applied directly.`;
      */
     private async validateBuild(build: FeatureBuild): Promise<void> {
         // Check that all created files exist and are non-empty
-        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
         if (!workspaceRoot) return;
 
         for (const file of build.filesCreated) {

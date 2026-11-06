@@ -2,7 +2,7 @@ import { EventEmitter } from "events";
 import type { ProviderRegistry } from "../providers/provider-registry";
 import type { ToolRegistry } from "../tools/tool-registry";
 import type { ChatManager } from "../chat/chat-manager";
-import { AgentMessageBus, type MessageType } from "./agent-message-bus";
+import { AgentMessageBus } from "./agent-message-bus";
 import { ConflictResolver } from "./conflict-resolver";
 import { logger } from "../../utils/logger";
 import { generateId } from "../../utils/helpers";
@@ -465,7 +465,7 @@ Respond with ONLY valid JSON:
     /**
      * Execute a single subtask with an agent.
      */
-    private async executeSubTask(agent: SwarmAgent, subTask: SubTask, parentTask: SwarmTask): Promise<void> {
+    private async executeSubTask(agent: SwarmAgent, subTask: SubTask, _parentTask: SwarmTask): Promise<void> {
         // Track which locks we've actually acquired for proper cleanup on error
         const acquiredLocks: string[] = [];
 

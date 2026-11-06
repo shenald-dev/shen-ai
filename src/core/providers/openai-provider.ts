@@ -4,12 +4,11 @@ import type {
     ProviderMessage,
     ProviderResponse,
     ProviderToolCall,
-    StreamingChunk,
+
     ToolDefinition,
 } from "../../types";
 import type { IProvider, StreamingCallback } from "./provider-interface";
 import { logger } from "../../utils/logger";
-import { safeJsonParse } from "../../utils/helpers";
 
 // ============================================================
 // SHEN AI — OpenAI Provider

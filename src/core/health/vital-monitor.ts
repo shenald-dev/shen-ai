@@ -137,7 +137,7 @@ export class VitalMonitor extends EventEmitter {
 
         // Calculate aggregate metrics
         const scores = Array.from(fileHealth.values()).map((f) => f.score);
-        const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 100;
+
 
         // Complexity metric
         const avgComplexity = scores.length > 0
@@ -402,7 +402,7 @@ export class VitalMonitor extends EventEmitter {
             if (todos > 0) issues.push(`${todos} TODO/FIXME comment(s)`);
 
             // Error handling
-            const hasTryCatch = content.includes("try {") || content.includes("try{");
+
             const hasErrorHandling = content.includes("catch") || content.includes(".catch(");
             if (!hasErrorHandling && content.includes("async")) {
                 issues.push("Async code without error handling");
@@ -560,7 +560,7 @@ export class VitalMonitor extends EventEmitter {
         return "critical";
     }
 
-    private getTrend(metricName: string, currentValue: number): HealthMetric["trend"] {
+    private getTrend(metricName: string, _currentValue: number): HealthMetric["trend"] {
         if (this.healthHistory.length < 2) return "stable";
 
         const recent = this.healthHistory.slice(-5);
@@ -588,7 +588,7 @@ export class VitalMonitor extends EventEmitter {
 
     private generatePrescriptions(
         fileHealth: Map<string, FileHealthScore>,
-        metrics: HealthMetric[]
+        _metrics: HealthMetric[]
     ): HealthPrescription[] {
         const prescriptions: HealthPrescription[] = [];
 

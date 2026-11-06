@@ -1,4 +1,4 @@
-import type { ProviderName, ProviderConfig, ProviderMessage, ProviderResponse, StreamingChunk, ToolDefinition } from "../../types";
+import type { ProviderName, ProviderConfig, ProviderMessage, ProviderResponse, ToolDefinition } from "../../types";
 import type { IProvider, StreamingCallback } from "./provider-interface";
 import type { ConfigManager } from "../../utils/config";
 import { OpenAIProvider } from "./openai-provider";

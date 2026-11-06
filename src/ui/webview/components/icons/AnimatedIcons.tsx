@@ -11,7 +11,6 @@ interface IconProps {
     animated?: boolean;
 }
 
-const defaultProps = { size: 16, animated: true };
 
 // --- Read File: Scanning document ---
 export function ReadFileIcon({ size = 16, animated = true, color }: IconProps): JSX.Element {

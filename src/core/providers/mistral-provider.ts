@@ -4,7 +4,7 @@ import type {
     ProviderMessage,
     ProviderResponse,
     ProviderToolCall,
-    StreamingChunk,
+
     ToolDefinition,
 } from "../../types";
 import type { IProvider, StreamingCallback } from "./provider-interface";
@@ -44,7 +44,7 @@ export class MistralProvider implements IProvider {
     async sendMessage(
         messages: ProviderMessage[],
         tools?: ToolDefinition[],
-        abortSignal?: AbortSignal
+        _abortSignal?: AbortSignal
     ): Promise<ProviderResponse> {
         if (!this.client || !this.config) {
             throw new Error("Mistral provider not initialized. Call initialize() first.");
@@ -106,7 +106,7 @@ export class MistralProvider implements IProvider {
         messages: ProviderMessage[],
         onChunk: StreamingCallback,
         tools?: ToolDefinition[],
-        abortSignal?: AbortSignal
+        _abortSignal?: AbortSignal
     ): Promise<ProviderResponse> {
         if (!this.client || !this.config) {
             throw new Error("Mistral provider not initialized. Call initialize() first.");
