@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { ToolCall } from "../../../types";
 
 // ============================================================
@@ -10,7 +10,7 @@ import type { ToolCall } from "../../../types";
 interface LiveFilePreviewProps {
     streamingToolCalls: any[];
     currentToolCall: ToolCall | null;
-    _isProcessing: boolean;
+    isProcessing: boolean;
 }
 
 const WRITE_TOOLS = ["write_to_file", "replace_in_file", "replace_file_content", "multi_replace_file_content", "apply_diff"];
@@ -54,9 +54,10 @@ function getLanguageFromPath(path: string): string {
 export default function LiveFilePreview({
     streamingToolCalls,
     currentToolCall,
-    _isProcessing,
+    isProcessing: _isProcessing,
 }: LiveFilePreviewProps): JSX.Element | null {
     const codeRef = useRef<HTMLPreElement>(null);
+    const [, setPrevContent] = useState<string>("");
 
 
     // Find the active write tool from streaming or current tool call
@@ -95,6 +96,7 @@ export default function LiveFilePreview({
     useEffect(() => {
         if (preview?.content) {
             setPrevContent(preview.content);
+
         }
     }, [preview?.content]);
 

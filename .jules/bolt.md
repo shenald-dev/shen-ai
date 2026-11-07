@@ -51,3 +51,7 @@
 ## 2026-11-08 — Fix recursive p-limit deadlock and EMFILE in directory traversal
 - **Learning:** When parallelizing recursive directory traversals, using `p-limit` on the recursive function itself causes deadlocks as parent directories consume slots while waiting for children. Bounding the concurrency of leaf I/O calls (`fs.promises.readdir`, `fs.promises.stat`, `fs.promises.realpath`) avoids both the deadlocks and `EMFILE` exhaustion.
 - **Action:** Fixed `EMFILE` limits and race condition in `src/core/health/vital-monitor.ts` and `src/core/memory/rag-engine.ts` by bounding concurrency solely at the I/O layer via `p-limit`, and eagerly managing symlink loop-detection state.
+
+## 2026-11-12 — Correctness Bugs & Failing Tests
+- **Learning:** Unused variables with `_` prefix like `_config` and `_filePath` cannot simply be renamed to remove the prefix if they are still unused in the code flow; it causes new `no-unused-vars` ESLint errors. Additionally, `workspaceRoot` was referenced in `feature-builder.ts` without being declared.
+- **Action:** Removed unused arguments (e.g. `_abortSignal`, `_testInput`, `_parentTask`, `_metrics`) entirely where possible to clean up function signatures. Also correctly imported and assigned `getWorkspaceRoot()` for `workspaceRoot`.

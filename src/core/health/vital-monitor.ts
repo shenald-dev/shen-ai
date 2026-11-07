@@ -150,7 +150,7 @@ export class VitalMonitor extends EventEmitter {
             max: 50,
             unit: "cognitive complexity",
             status: avgComplexity < 10 ? "healthy" : avgComplexity < 20 ? "warning" : "critical",
-            trend: this.getTrend("complexity", avgComplexity),
+            trend: this.getTrend("complexity"),
             description: avgComplexity < 10 ? "Code is easy to understand" : avgComplexity < 20 ? "Some functions are complex" : "High complexity makes code hard to maintain",
         });
 
@@ -164,7 +164,7 @@ export class VitalMonitor extends EventEmitter {
             max: 100,
             unit: "index",
             status: avgMaintainability > 70 ? "healthy" : avgMaintainability > 40 ? "warning" : "critical",
-            trend: this.getTrend("maintainability", avgMaintainability),
+            trend: this.getTrend("maintainability"),
             description: avgMaintainability > 70 ? "Code is easy to maintain" : avgMaintainability > 40 ? "Maintenance may be challenging" : "Code is difficult to maintain",
         });
 
@@ -177,7 +177,7 @@ export class VitalMonitor extends EventEmitter {
             max: 100,
             unit: "debt points",
             status: debtScore < 20 ? "healthy" : debtScore < 50 ? "warning" : "critical",
-            trend: this.getTrend("debt", debtScore),
+            trend: this.getTrend("debt"),
             description: `${totalIssues} issues detected across ${sourceFiles.length} files`,
         });
 
@@ -580,7 +580,7 @@ export class VitalMonitor extends EventEmitter {
         return "critical";
     }
 
-    private getTrend(metricName: string, _currentValue: number): HealthMetric["trend"] {
+    private getTrend(metricName: string): HealthMetric["trend"] {
         if (this.healthHistory.length < 2) return "stable";
 
         const recent = this.healthHistory.slice(-5);
@@ -608,7 +608,8 @@ export class VitalMonitor extends EventEmitter {
 
     private generatePrescriptions(
         fileHealth: Map<string, FileHealthScore>,
-        _metrics: HealthMetric[]
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        _metrics?: HealthMetric[]
     ): HealthPrescription[] {
         const prescriptions: HealthPrescription[] = [];
 

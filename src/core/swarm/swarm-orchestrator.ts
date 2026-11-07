@@ -441,7 +441,7 @@ Respond with ONLY valid JSON:
                         agent.status = "working";
                         agent.currentTask = subTask;
 
-                        const promise = this.executeSubTask(agent, subTask, task).then(() => {
+                        const promise = this.executeSubTask(agent, subTask).then(() => {
                             // Remove from running tasks when complete
                             runningTasks.delete(subTask.id);
                         });
@@ -465,7 +465,7 @@ Respond with ONLY valid JSON:
     /**
      * Execute a single subtask with an agent.
      */
-    private async executeSubTask(agent: SwarmAgent, subTask: SubTask, _parentTask: SwarmTask): Promise<void> {
+    private async executeSubTask(agent: SwarmAgent, subTask: SubTask, ): Promise<void> {
         // Track which locks we've actually acquired for proper cleanup on error
         const acquiredLocks: string[] = [];
 

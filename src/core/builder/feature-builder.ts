@@ -3,7 +3,7 @@ import type { ProviderRegistry } from "../providers/provider-registry";
 import type { ToolRegistry } from "../tools/tool-registry";
 import type { GraphStore } from "../genome/graph-store";
 import { logger } from "../../utils/logger";
-import { generateId } from "../../utils/helpers";
+import { generateId, getWorkspaceRoot } from "../../utils/helpers";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -27,7 +27,7 @@ export interface FeatureStep {
     id: string;
     title: string;
     description: string;
-    type: "createfile" | "modify_file" | "run_command" | "test" | "validate";
+    type: "createfile" | "modifyfile" | "runcommand" | "test" | "validate";
     filePath?: string;
     command?: string;
     status: "pending" | "inprogress" | "completed" | "failed" | "skipped";
@@ -351,6 +351,7 @@ Respond with ONLY valid JSON:
      */
     private async executeStep(step: FeatureStep, build: FeatureBuild): Promise<void> {
 
+        const workspaceRoot = getWorkspaceRoot();
         if (!workspaceRoot) {
             throw new Error("No workspace folder open.");
         }
@@ -650,6 +651,7 @@ Provide a fix that can be applied directly.`;
     private async validateBuild(build: FeatureBuild): Promise<void> {
         // Check that all created files exist and are non-empty
 
+        const workspaceRoot = getWorkspaceRoot();
         if (!workspaceRoot) return;
 
         for (const file of build.filesCreated) {

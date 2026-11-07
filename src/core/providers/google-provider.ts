@@ -50,7 +50,7 @@ export class GoogleProvider implements IProvider {
     async sendMessage(
         messages: ProviderMessage[],
         tools?: ToolDefinition[],
-        _abortSignal?: AbortSignal
+
     ): Promise<ProviderResponse> {
         if (!this.model || !this.config) {
             throw new Error("Google provider not initialized. Call initialize() first.");
@@ -110,7 +110,7 @@ export class GoogleProvider implements IProvider {
         messages: ProviderMessage[],
         onChunk: StreamingCallback,
         tools?: ToolDefinition[],
-        _abortSignal?: AbortSignal
+
     ): Promise<ProviderResponse> {
         if (!this.model || !this.config) {
             throw new Error("Google provider not initialized. Call initialize() first.");

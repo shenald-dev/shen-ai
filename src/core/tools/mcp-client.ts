@@ -64,6 +64,7 @@ interface MCPNotification {
 }
 
 export class MCPClient extends EventEmitter {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private servers: Map<string, MCPServerConfig>;
     private connections: Map<string, MCPConnection>;
     private tools: Map<string, MCPTool>;
@@ -92,11 +93,11 @@ export class MCPClient extends EventEmitter {
         const promises: Promise<void>[] = [];
 
         for (const [name, _config] of this.servers) {
-            if (!config.enabled) {
+            if (!_config.enabled) {
                 logger.info(`MCP server ${name} is disabled, skipping.`);
                 continue;
             }
-            promises.push(this.connectServer(name, config));
+            promises.push(this.connectServer(name, _config));
         }
 
         await Promise.allSettled(promises);
@@ -145,7 +146,7 @@ export class MCPClient extends EventEmitter {
             this.emit("serverConnected", { name, tools: serverTools.length, resources: serverResources.length });
             logger.info(`MCP connected to ${name}: ${serverTools.length} tools, ${serverResources.length} resources`);
 
-        } catch (_error) {
+        } catch (error) {
             const errorMsg = (error as Error).message;
             logger.error(`MCP failed to connect to ${name}:`, error);
             this.emit("serverError", { name, error: errorMsg });
@@ -230,7 +231,7 @@ export class MCPClient extends EventEmitter {
                 content: this.formatToolResult(result),
                 isError: false,
             };
-        } catch (_error) {
+        } catch (error) {
             return {
                 toolCallId: call.id,
                 name: call.name,
@@ -457,7 +458,7 @@ class MCPConnection extends EventEmitter {
             try {
                 const message = JSON.parse(line);
                 this.handleMessage(message);
-            } catch (_error) {
+            } catch (error) {
                 logger.warn(`MCP [${this.config.name}] failed to parse message: ${line}`);
             }
         }

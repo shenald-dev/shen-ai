@@ -15,6 +15,13 @@ interface ConversationMeta {
     totalTokens: number;
 }
 
+const formatDate = (ts: number): string => {
+    return new Date(ts).toLocaleDateString([], {
+        month: "short",
+        day: "numeric",
+    });
+};
+
 function HistoryPanel(): JSX.Element {
     const { setShowHistory, clearMessages } = useChatStore();
     const [history, setHistory] = useState<ConversationMeta[]>([]);

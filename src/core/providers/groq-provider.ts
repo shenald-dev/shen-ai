@@ -44,7 +44,7 @@ export class GroqProvider implements IProvider {
     async sendMessage(
         messages: ProviderMessage[],
         tools?: ToolDefinition[],
-        _abortSignal?: AbortSignal
+
     ): Promise<ProviderResponse> {
         if (!this.client || !this.config) {
             throw new Error("Groq provider not initialized. Call initialize() first.");
@@ -95,7 +95,7 @@ export class GroqProvider implements IProvider {
         messages: ProviderMessage[],
         onChunk: StreamingCallback,
         tools?: ToolDefinition[],
-        _abortSignal?: AbortSignal
+
     ): Promise<ProviderResponse> {
         if (!this.client || !this.config) {
             throw new Error("Groq provider not initialized. Call initialize() first.");
