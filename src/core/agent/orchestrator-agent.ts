@@ -286,10 +286,15 @@ Respond with ONLY valid JSON:
             }
         } else {
             // Sequential or pipeline: respect dependencies
+            const stepMap = new Map<string, DelegationStep>();
+            for (const step of plan.steps) {
+                stepMap.set(step.id, step);
+            }
+
             for (const step of plan.steps) {
                 // Check if dependencies are met
                 const depsMet = step.dependsOn?.every((depId) => {
-                    const depStep = plan.steps.find((s) => s.id === depId);
+                    const depStep = stepMap.get(depId);
                     return depStep && depStep.status === "completed";
                 }) ?? true;
 

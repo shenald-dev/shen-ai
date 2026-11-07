@@ -89,9 +89,6 @@ export default function CheckpointTimeline({
         });
     };
 
-    const getFileName = (filePath: string): string => {
-        return filePath.split(/[\/\\]/).pop() || filePath;
-    };
 
     const totalChanges = tasks.reduce((sum, t) => sum + t.fileChanges.length, 0);
     const totalCheckpoints = tasks.reduce((sum, t) => sum + t.checkpoints.length, 0);

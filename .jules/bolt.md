@@ -40,3 +40,14 @@
 ## 2026-11-02 - Reliability/Memory: Properly Bounds-check Spawn Output Streams
 - **Learning:** When manually bounds-checking `maxBuffer` on child process streams, checking string lengths after `toString()` allows silent memory accumulation if the promise rejects but processing continues. In addition, killing the child process triggers the `close` event, resulting in double Promise resolutions/rejections.
 - **Action:** Implemented a `settled` flag on all spawn Promise wrappers in `src/core/builder/feature-builder.ts` to prevent double resolution, calculated lengths accurately via `data.length`, and explicitly added early `return` statements to prevent further `stdout` and `stderr` appends when `maxBuffer` limits are breached.
+
+## 2026-11-04 - Performance Optimization: Precompute Map to Avoid O(N^2) Lookups in Orchestrator
+- **Learning:** In `orchestrator-agent.ts`, resolving task dependencies inside a `for` loop used nested array iterators (`.find()` inside `.every()`), causing an O(N^2) bottleneck when checking dependencies against the entire plan's steps.
+- **Action:** Refactored the array search approach into a precomputed `Map` prior to the loop. This changes the O(N) `.find()` lookup to an O(1) `.get()` operation, reducing the overall algorithmic complexity to O(N).
+
+## 2026-11-06 - Security & Reliability: Properly Bounds-check Spawn Output Streams
+- **Learning:** When executing child processes using `spawn` where standard I/O is consumed, failing to enforce memory bounds leaves the application vulnerable to DoS from infinite or excessively large outputs. Additionally, when streams are piped to event listeners, listening for `exit` instead of `close` can cause race conditions since `exit` triggers before stdio streams are fully flushed.
+- **Action:** Implemented a strict 10MB `maxBuffer` on `git` child processes in `checkpoint-manager.ts`, killing the child and returning an error if bounds are exceeded. Also updated `mcp-client.ts` to attach to the `close` event instead of `exit` to ensure all output is fully processed before the process is considered disconnected.
+## 2026-11-08 — Fix recursive p-limit deadlock and EMFILE in directory traversal
+- **Learning:** When parallelizing recursive directory traversals, using `p-limit` on the recursive function itself causes deadlocks as parent directories consume slots while waiting for children. Bounding the concurrency of leaf I/O calls (`fs.promises.readdir`, `fs.promises.stat`, `fs.promises.realpath`) avoids both the deadlocks and `EMFILE` exhaustion.
+- **Action:** Fixed `EMFILE` limits and race condition in `src/core/health/vital-monitor.ts` and `src/core/memory/rag-engine.ts` by bounding concurrency solely at the I/O layer via `p-limit`, and eagerly managing symlink loop-detection state.

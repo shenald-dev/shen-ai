@@ -1,5 +1,4 @@
 import type { ProviderRegistry } from "../providers/provider-registry";
-import type { ProviderMessage } from "../../types";
 import { logger } from "../../utils/logger";
 
 // ============================================================

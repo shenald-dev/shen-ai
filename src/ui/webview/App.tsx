@@ -86,8 +86,6 @@ export default function App(): JSX.Element {
         setStreamingToolCalls,
         setThinkingPhase,
         setCheckpointTasks,
-        resetStreamingState,
-        truncateMessagesAfter,
     } = useChatStore();
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -282,17 +280,6 @@ export default function App(): JSX.Element {
         finishStreaming();
     }, [setProcessing, finishStreaming]);
 
-    const handleNewTask = useCallback(() => {
-        postMessage({ action: "task/new" });
-        clearMessages();
-        setShowHistory(false);
-        setShowSettings(false);
-        if (!settings.hasApiKey && settings.provider !== "ollama" && settings.provider !== "custom") {
-            setShowWelcome(true);
-        } else {
-            setShowWelcome(false);
-        }
-    }, [clearMessages, settings.hasApiKey, settings.provider, setShowHistory, setShowSettings]);
 
     const handleClear = useCallback(() => {
         postMessage({ action: "chat/clear" });
@@ -586,10 +573,10 @@ export default function App(): JSX.Element {
 
                     {/* Live File Preview — shows real-time code being written to files */}
                     <LiveFilePreview
-                        streamingToolCalls={streamingToolCalls}
-                        currentToolCall={currentToolCall}
-                        isProcessing={isProcessing}
-                    />
+                            streamingToolCalls={streamingToolCalls}
+                            currentToolCall={currentToolCall}
+                            _isProcessing={isProcessing}
+                        />
 
                     <div ref={messagesEndRef} />
                 </div>

@@ -1,3 +1,4 @@
+import * as vscode from "vscode";
 import { EventEmitter } from "events";
 import type { ProviderRegistry } from "../providers/provider-registry";
 import type { ToolRegistry } from "../tools/tool-registry";
@@ -6,7 +7,6 @@ import { logger } from "../../utils/logger";
 import { generateId } from "../../utils/helpers";
 import * as fs from "fs";
 import * as path from "path";
-import * as vscode from "vscode";
 
 // ============================================================
 // SHEN AI — Autonomous Feature Builder
@@ -251,7 +251,7 @@ export class FeatureBuilder extends EventEmitter {
      * Use AI to create a detailed feature plan.
      */
     private async createPlan(userRequest: string, buildId: string): Promise<FeaturePlan> {
-        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
         const projectContext = this.getProjectContext();
 
         const prompt = `You are an autonomous feature builder. Plan how to implement this feature:
@@ -263,8 +263,8 @@ ${projectContext}
 
 Create a detailed, step-by-step implementation plan. Each step should be a concrete action:
 - create_file: Create a new file with complete content
-- modify_file: Modify an existing file
-- run_command: Execute a shell command (install deps, run migrations, etc.)
+- modifyfile: Modify an existing file
+- runcommand: Execute a shell command (install deps, run migrations, etc.)
 - test: Run tests to verify the implementation
 - validate: Validate the feature works correctly
 
@@ -316,7 +316,7 @@ Respond with ONLY valid JSON:
                 estimatedComplexity: parsed.estimatedComplexity || "medium",
                 estimatedFiles: parsed.estimatedFiles || [],
                 steps: (parsed.steps || []).map((s: Record<string, unknown>, i: number) => ({
-                    id: `step_${i}`,
+                    id: `step${i}`,
                     title: String(s.title || `Step ${i + 1}`),
                     description: String(s.description || ""),
                     type: (s.type as FeatureStep["type"]) || "create_file",
@@ -336,7 +336,7 @@ Respond with ONLY valid JSON:
                 estimatedComplexity: "medium",
                 estimatedFiles: [],
                 steps: [{
-                    id: "step_0",
+                    id: "step0",
                     title: "Implement feature",
                     description: userRequest,
                     type: "create_file",
@@ -351,6 +351,7 @@ Respond with ONLY valid JSON:
      * Execute a single build step.
      */
     private async executeStep(step: FeatureStep, build: FeatureBuild): Promise<void> {
+
         const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
         if (!workspaceRoot) {
             throw new Error("No workspace folder open.");
@@ -650,6 +651,7 @@ Provide a fix that can be applied directly.`;
      */
     private async validateBuild(build: FeatureBuild): Promise<void> {
         // Check that all created files exist and are non-empty
+
         const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
         if (!workspaceRoot) return;
 

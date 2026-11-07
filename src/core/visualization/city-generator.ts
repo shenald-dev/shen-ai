@@ -102,7 +102,6 @@ export class CityGenerator {
      */
     generateCity(options: LayoutOptions = {}): CityData {
         const {
-            gridSize = 100,
             buildingSpacing = 2,
             maxHeight = 50,
             districtRadius = 30,

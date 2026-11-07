@@ -4,7 +4,7 @@ import type {
     ProviderMessage,
     ProviderResponse,
     ProviderToolCall,
-    StreamingChunk,
+
     ToolDefinition,
 } from "../../types";
 import type { IProvider, StreamingCallback } from "./provider-interface";
@@ -50,7 +50,7 @@ export class GoogleProvider implements IProvider {
     async sendMessage(
         messages: ProviderMessage[],
         tools?: ToolDefinition[],
-        abortSignal?: AbortSignal
+        _abortSignal?: AbortSignal
     ): Promise<ProviderResponse> {
         if (!this.model || !this.config) {
             throw new Error("Google provider not initialized. Call initialize() first.");
@@ -110,7 +110,7 @@ export class GoogleProvider implements IProvider {
         messages: ProviderMessage[],
         onChunk: StreamingCallback,
         tools?: ToolDefinition[],
-        abortSignal?: AbortSignal
+        _abortSignal?: AbortSignal
     ): Promise<ProviderResponse> {
         if (!this.model || !this.config) {
             throw new Error("Google provider not initialized. Call initialize() first.");

@@ -114,7 +114,7 @@ export class AgentMessageBus extends EventEmitter {
     ): Promise<AgentMessage> {
         const correlationId = this.generateId();
 
-        const requestMessage = this.publish({
+        this.publish({
             from,
             to,
             type,

@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import { EventEmitter } from "events";
+import pLimit from "p-limit";
 import type { GraphStore } from "../genome/graph-store";
 import { logger } from "../../utils/logger";
 
@@ -137,7 +138,7 @@ export class VitalMonitor extends EventEmitter {
 
         // Calculate aggregate metrics
         const scores = Array.from(fileHealth.values()).map((f) => f.score);
-        const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 100;
+
 
         // Complexity metric
         const avgComplexity = scores.length > 0
@@ -182,13 +183,16 @@ export class VitalMonitor extends EventEmitter {
 
         // File size distribution
         let largeFileCount = 0;
+        const limit = pLimit(20);
         const fileSizePromises = sourceFiles.map(async (f) => {
             try {
-                const stat = await fs.promises.stat(f);
+                const stat = await limit(() => fs.promises.stat(f));
                 if (stat.size > 10000) {
                     return 1 as number;
                 }
-            } catch { /* skip */ }
+            } catch (err) {
+                logger.warn(`Failed to stat file ${f}:`, err);
+            }
             return 0 as number;
         });
 
@@ -340,24 +344,35 @@ export class VitalMonitor extends EventEmitter {
         // Track visited real paths to prevent infinite loops from circular symlinks
         const visitedRealPaths = new Set<string>();
 
+        const limit = pLimit(10); // Bound concurrency for I/O operations
+
         const walk = async (dir: string): Promise<void> => {
             try {
-                // Resolve the real path to detect symlink cycles
-                const realDir = await fs.promises.realpath(dir);
-                if (visitedRealPaths.has(realDir)) {
-                    // Circular symlink detected, skip this directory
+                // Eagerly add to visited to prevent concurrent re-entry
+                if (visitedRealPaths.has(dir)) {
                     return;
                 }
-                visitedRealPaths.add(realDir);
+                visitedRealPaths.add(dir);
 
-                const items = await fs.promises.readdir(dir, { withFileTypes: true });
+                // Resolve the real path to detect symlink cycles safely
+                const realDir = await limit(() => fs.promises.realpath(dir));
+                if (dir !== realDir) {
+                    if (visitedRealPaths.has(realDir)) {
+                        return; // Circular symlink detected
+                    }
+                    visitedRealPaths.add(realDir);
+                }
+
+                const items = await limit(() => fs.promises.readdir(dir, { withFileTypes: true }));
+                const dirPromises: Promise<void>[] = [];
+
                 for (const item of items) {
                     if (item.name.startsWith(".")) continue;
                     if (ignored.includes(item.name)) continue;
 
                     const fullPath = path.join(dir, item.name);
                     if (item.isDirectory()) {
-                        await walk(fullPath);
+                        dirPromises.push(walk(fullPath));
                     } else if (item.isFile()) {
                         const ext = path.extname(item.name);
                         if (extensions.includes(ext)) {
@@ -365,7 +380,11 @@ export class VitalMonitor extends EventEmitter {
                         }
                     }
                 }
-            } catch { /* skip inaccessible directories */ }
+
+                await Promise.all(dirPromises);
+            } catch (err) {
+                logger.warn(`Failed to access directory ${dir}:`, err);
+            }
         };
 
         await walk(workspaceRoot);
@@ -402,7 +421,7 @@ export class VitalMonitor extends EventEmitter {
             if (todos > 0) issues.push(`${todos} TODO/FIXME comment(s)`);
 
             // Error handling
-            const hasTryCatch = content.includes("try {") || content.includes("try{");
+
             const hasErrorHandling = content.includes("catch") || content.includes(".catch(");
             if (!hasErrorHandling && content.includes("async")) {
                 issues.push("Async code without error handling");
@@ -423,7 +442,8 @@ export class VitalMonitor extends EventEmitter {
             let stat: fs.Stats;
             try {
                 stat = await fs.promises.stat(filePath);
-            } catch {
+            } catch (err) {
+                logger.warn(`Failed to stat file for health analysis ${filePath}:`, err);
                 stat = { mtimeMs: Date.now() } as fs.Stats;
             }
 
@@ -560,7 +580,7 @@ export class VitalMonitor extends EventEmitter {
         return "critical";
     }
 
-    private getTrend(metricName: string, currentValue: number): HealthMetric["trend"] {
+    private getTrend(metricName: string, _currentValue: number): HealthMetric["trend"] {
         if (this.healthHistory.length < 2) return "stable";
 
         const recent = this.healthHistory.slice(-5);
@@ -588,7 +608,7 @@ export class VitalMonitor extends EventEmitter {
 
     private generatePrescriptions(
         fileHealth: Map<string, FileHealthScore>,
-        metrics: HealthMetric[]
+        _metrics: HealthMetric[]
     ): HealthPrescription[] {
         const prescriptions: HealthPrescription[] = [];
 

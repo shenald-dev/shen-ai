@@ -1,6 +1,4 @@
 import * as vm from "vm";
-import * as path from "path";
-import { logger } from "../../utils/logger";
 
 // ============================================================
 // SHEN AI — Sandbox Manager (Isolated Code Execution)
@@ -284,7 +282,7 @@ export class SandboxManager {
     previewChange(
         originalCode: string,
         newCode: string,
-        testInput?: Record<string, unknown>
+        _testInput?: Record<string, unknown>
     ): {
         originalResult: SandboxResult;
         newResult: SandboxResult;

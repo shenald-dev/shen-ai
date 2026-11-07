@@ -42,14 +42,6 @@ function HistoryPanel(): JSX.Element {
         postMessage({ action: "chat/loadHistory" as any, payload: { id } });
     };
 
-    const formatDate = (timestamp: number) => {
-        return new Date(timestamp).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-        });
-    };
 
     return (
         <div style={{
@@ -120,14 +112,6 @@ function HistoryItem({ conv, onSelect }: { conv: ConversationMeta; onSelect: (id
         }
     };
 
-    const formatDate = (timestamp: number) => {
-        return new Date(timestamp).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-        });
-    };
 
     return (
         <div
@@ -211,7 +195,7 @@ function HistoryItem({ conv, onSelect }: { conv: ConversationMeta; onSelect: (id
                     color: "var(--vscode-descriptionForeground)",
                 }}
             >
-                <span>{formatDate(conv.updatedAt)}</span>
+                <span>{new Date(conv.updatedAt).toLocaleDateString()}</span>
                 <span>{conv.totalTokens} tokens</span>
             </div>
         </div>

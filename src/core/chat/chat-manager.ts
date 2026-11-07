@@ -311,7 +311,7 @@ Remember: You are operating inside a real development environment. Your actions 
                     this.history.getMessages(),
                     convId
                 );
-                this.history.replaceWithSummary(summary.summaryText, messagesToKeep);
+                this.history.replaceWithSummary(summary.summary, messagesToKeep);
                 logger.info(`Context auto-summarized: preserved ${messagesToKeep.length} recent messages, saved ${summary.tokensSaved} tokens.`);
             } catch (summarizeErr) {
                 logger.warn("Conversation summarization failed, continuing with full context:", summarizeErr);
@@ -694,7 +694,7 @@ Remember: You are operating inside a real development environment. Your actions 
                 const architectAgent = (this.deps?.orchestrator?.getAgent("architect") as ArchitectAgent) || null;
                 if (architectAgent) {
                     try {
-                        const result = await architectAgent.designSystem(args, "High maintainability, modularity, and clean error boundaries", activeFile ? [activeFile] : undefined);
+                        const result = await architectAgent.executeTask({ id: `arch-${Date.now()}`, priority: "high", description: args, context: "High maintainability, modularity, and clean error boundaries", files: activeFile ? [activeFile] : undefined });
                         const responseContent = result.content || "Architecture plan generated.";
                         callbacks.onStreaming?.(responseContent, true);
                         const assistantMessage: ChatMessage = {
@@ -724,7 +724,7 @@ Remember: You are operating inside a real development environment. Your actions 
                 const researchAgent = (this.deps?.orchestrator?.getAgent("researcher") as ResearchAgent) || null;
                 if (researchAgent) {
                     try {
-                        const result = await researchAgent.research(args, activeFile ? [activeFile] : undefined);
+                        const result = await researchAgent.executeTask({ id: `res-${Date.now()}`, priority: "high", description: args, files: activeFile ? [activeFile] : undefined });
                         const responseContent = result.content || "Research completed.";
                         callbacks.onStreaming?.(responseContent, true);
                         const assistantMessage: ChatMessage = {
