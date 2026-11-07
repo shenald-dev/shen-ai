@@ -102,7 +102,6 @@ export class CityGenerator {
      */
     generateCity(options: LayoutOptions = {}): CityData {
         const {
-            gridSize = 100,
             buildingSpacing = 2,
             maxHeight = 50,
             districtRadius = 30,
@@ -119,7 +118,7 @@ export class CityGenerator {
         const districtPositions = new Map<string, { x: number; y: number }>();
 
         let districtIndex = 0;
-        for (const [filePath, fileNodes] of fileGroups) {
+        for (const [_filePath, fileNodes] of fileGroups) {
             const angle = (districtIndex / fileGroups.size) * Math.PI * 2;
             const dist = Math.sqrt(fileGroups.size) * districtRadius * 0.5;
             const x = Math.cos(angle) * dist;
@@ -257,7 +256,7 @@ export class CityGenerator {
 
         // Position files in a circle
         let fileIndex = 0;
-        for (const [filePath, fileNodes] of fileGroups) {
+        for (const [_filePath, fileNodes] of fileGroups) {
             const angle = (fileIndex / fileGroups.size) * Math.PI * 2;
             const radius = Math.sqrt(fileGroups.size) * 20;
             const fx = Math.cos(angle) * radius;

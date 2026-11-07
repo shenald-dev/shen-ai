@@ -252,7 +252,6 @@ export class StyleExtractor {
         let match;
         const functionLengths: number[] = [];
         while ((match = functionRegex.exec(code)) !== null) {
-            const startLine = code.substring(0, match.index).split("\n").length;
             // Rough estimate: find next function or end of block
             const remaining = code.substring(match.index);
             const braceCount = (remaining.match(/\{/g) || []).length;

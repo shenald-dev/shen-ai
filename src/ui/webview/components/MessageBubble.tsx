@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -6,7 +6,7 @@ import rehypeSanitize from "rehype-sanitize";
 import rehypeHighlight from "rehype-highlight";
 import type { ChatMessage } from "../../../types";
 import { postMessage } from "../vscode-api";
-import { getToolIcon, UndoIcon, RestoreIcon, CheckIcon, ErrorIcon } from "./icons/AnimatedIcons";
+import { getToolIcon, UndoIcon, CheckIcon, ErrorIcon } from "./icons/AnimatedIcons";
 
 // ============================================================
 // SHEN AI — Message Bubble Component (Redesigned)

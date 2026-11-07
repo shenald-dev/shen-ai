@@ -7,7 +7,6 @@ import type { CorrectionTracker } from "../core/evolution/correction-tracker";
 import type {
     WebviewMessage,
     ExtensionMessage,
-    ChatMessage,
     ToolCall,
     ToolResult,
     PersonalityType,

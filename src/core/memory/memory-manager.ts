@@ -274,7 +274,6 @@ export class MemoryManager {
     // --- User Preferences ---
 
     setPreference(category: string, key: string, value: unknown, source: "explicit" | "inferred" = "explicit"): UserPreference {
-        const existingKey = `${category}:${key}`;
         const existing = Array.from(this.userPreferences.values()).find(
             (p) => p.category === category && p.key === key
         );

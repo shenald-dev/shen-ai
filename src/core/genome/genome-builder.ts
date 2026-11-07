@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import { GraphStore, type GraphNode, type GraphEdge, type NodeType, type EdgeType } from "./graph-store";
+import { GraphStore, type GraphNode, type GraphEdge } from "./graph-store";
 import { generateId } from "../../utils/helpers";
 import { logger } from "../../utils/logger";
 

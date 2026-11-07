@@ -4,7 +4,7 @@ import type {
     ProviderMessage,
     ProviderResponse,
     ProviderToolCall,
-    StreamingChunk,
+
     ToolDefinition,
 } from "../../types";
 import type { IProvider, StreamingCallback } from "./provider-interface";

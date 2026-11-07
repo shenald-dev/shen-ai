@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import type { ProviderRegistry } from "../providers/provider-registry";
 import type { ToolRegistry } from "../tools/tool-registry";
-import type { ProviderMessage, ToolDefinition, AgentRole } from "../../types";
+import type { ProviderMessage, AgentRole } from "../../types";
 import { logger } from "../../utils/logger";
 import { generateId } from "../../utils/helpers";
 

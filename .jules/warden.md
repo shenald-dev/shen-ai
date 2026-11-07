@@ -8,3 +8,6 @@
 ## 2026-11-04 — Lifecycle & Assurance Ledger
 - **QA & Veto Actions:** Fixed an O(N^2) bottleneck in `src/core/swarm/conflict-resolver.ts` where `sorted.find` was used repeatedly inside a loop. Refactored it to use a precomputed `Map` (`agentLatestTimestamps`), changing the lookup complexity to O(1).
 - **Entropy Pruned:** Removed throwaway execution script (`patch.js`).
+## 2026-11-06 — Lifecycle & Assurance Ledger
+- **QA & Veto Actions:** None
+- **Entropy Pruned:** Removed unused variables and imports in various files and prefixed unused function arguments with _ to fix strict lint warnings.

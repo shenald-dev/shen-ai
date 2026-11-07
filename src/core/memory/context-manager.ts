@@ -1,4 +1,4 @@
-import type { ProviderMessage, ToolDefinition } from "../../types";
+import type { ProviderMessage } from "../../types";
 import { estimateTokens, truncateToTokenLimit } from "../../utils/helpers";
 import { logger } from "../../utils/logger";
 
@@ -180,7 +180,6 @@ export class ContextManager {
 
             if (msg.role === "assistant" && i + 1 < messages.length && messages[i + 1].role === "tool") {
                 // This is a tool call followed by result — summarize as single message
-                const toolMsg = messages[i + 1];
                 const summary = `[Tool used → Result received]`;
                 const summaryTokens = estimateTokens(summary);
 

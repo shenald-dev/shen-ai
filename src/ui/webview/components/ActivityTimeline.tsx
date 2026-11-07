@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { ToolCall, ToolResult } from "../../../types";
-import { getToolIcon, ThinkingIcon, SpinnerIcon, CheckIcon, ErrorIcon } from "./icons/AnimatedIcons";
+import { getToolIcon, SpinnerIcon, CheckIcon, ErrorIcon } from "./icons/AnimatedIcons";
 
 // ============================================================
 // SHEN AI — Activity Timeline Component (Redesigned)
