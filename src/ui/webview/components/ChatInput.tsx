@@ -423,7 +423,7 @@ export default function ChatInput({
                                 cursor: "pointer",
                                 display: "flex",
                                 alignItems: "center",
-                                justifyCenter: "center",
+                                justifyContent: "center",
                                 fontSize: "14px",
                             }}
                         >

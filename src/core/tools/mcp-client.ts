@@ -91,7 +91,7 @@ export class MCPClient extends EventEmitter {
     async connectAll(): Promise<void> {
         const promises: Promise<void>[] = [];
 
-        for (const [name, _config] of this.servers) {
+        for (const [name, config] of this.servers) {
             if (!config.enabled) {
                 logger.info(`MCP server ${name} is disabled, skipping.`);
                 continue;
@@ -146,8 +146,8 @@ export class MCPClient extends EventEmitter {
             logger.info(`MCP connected to ${name}: ${serverTools.length} tools, ${serverResources.length} resources`);
 
         } catch (_error) {
-            const errorMsg = (error as Error).message;
-            logger.error(`MCP failed to connect to ${name}:`, error);
+            const errorMsg = (_error as Error).message;
+            logger.error(`MCP failed to connect to ${name}:`, _error);
             this.emit("serverError", { name, error: errorMsg });
         }
     }
@@ -234,7 +234,7 @@ export class MCPClient extends EventEmitter {
             return {
                 toolCallId: call.id,
                 name: call.name,
-                content: `Error executing MCP tool '${toolName}': ${(error as Error).message}`,
+                content: `Error executing MCP tool '${toolName}': ${(_error as Error).message}`,
                 isError: true,
             };
         }

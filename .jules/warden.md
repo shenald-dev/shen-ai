@@ -11,3 +11,7 @@
 ## 2026-11-06 — Lifecycle & Assurance Ledger
 - **QA & Veto Actions:** None
 - **Entropy Pruned:** Removed unused variables and imports in various files and prefixed unused function arguments with _ to fix strict lint warnings.
+## 2026-11-08 — Lifecycle & Assurance Ledger
+- **QA & Veto Actions:** Resolved Typescript compilation errors introduced by over-aggressive unused variable cleanup by restoring \`workspaceRoot\` in \`feature-builder.ts\`, \`summary.summary\` in \`chat-manager.ts\`, \`isProcessing\` in \`LiveFilePreview.tsx\`, and several other destructured attributes across the codebase.
+- **Entropy Pruned:** None
+- **Deferred / Blocked:** None
